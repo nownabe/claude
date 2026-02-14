@@ -2,6 +2,9 @@
   "name": "@nownabe/claude-hooks",
   "version": "0.0.1",
   "main": "./dist/index.js",
+  "bin": {
+    "pre-bash": "./dist/pre-bash.js"
+  },
   "files": [
     "dist"
   ],
@@ -9,7 +12,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./dist --target node && tsc --emitDeclarationOnly --outDir ./dist",
+    "build": "bun build ./src/index.ts ./src/pre-bash.ts --outdir ./dist --target node && tsc --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "lint": "oxlint src/",
     "typecheck": "tsc --noEmit"
