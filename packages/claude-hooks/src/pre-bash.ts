@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 /**
  * PreToolUse hook for Bash commands.
  * Runs multiple checkers against the command and returns a deny decision
@@ -159,7 +157,7 @@ type Checker = (command: string) => DenyResult | null;
 
 // --- Main ---
 
-async function main() {
+export async function main() {
   const text = await Bun.stdin.text();
   const input: HookInput = JSON.parse(text);
   const command = input.tool_input.command;
@@ -187,6 +185,3 @@ async function main() {
   process.exit(0);
 }
 
-if (import.meta.main) {
-  main();
-}
