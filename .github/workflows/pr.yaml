@@ -13,6 +13,7 @@ jobs:
       contents: read
     outputs:
       github-actions: ${{ steps.changed-files.outputs.github-actions_any_changed }}
+      packages: ${{ steps.changed-files.outputs.packages_any_changed }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -26,11 +27,23 @@ jobs:
           files_yaml: |
             github-actions:
               - .github/**
+            packages:
+              - packages/**
+              - package.json
+              - bun.lock
+              - tsconfig.base.json
 
   check-github-actions:
     needs: changed-files
     if: needs.changed-files.outputs.github-actions == 'true'
     uses: ./.github/workflows/reusable-check-github-actions.yaml
+    permissions:
+      contents: read
+
+  check-packages:
+    needs: changed-files
+    if: needs.changed-files.outputs.packages == 'true'
+    uses: ./.github/workflows/reusable-check-packages.yaml
     permissions:
       contents: read
 
@@ -40,6 +53,7 @@ jobs:
     if: always()
     needs:
       - check-github-actions
+      - check-packages
     permissions: {}
     steps:
       - name: Check job results

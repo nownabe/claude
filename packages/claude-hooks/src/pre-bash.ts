@@ -184,4 +184,3 @@ export async function main() {
   // All checks passed — no opinion, let normal permission flow continue.
   process.exit(0);
 }
-
