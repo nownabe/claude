@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      format: ${{ steps.changed-files.outputs.format_any_changed }}
       github-actions: ${{ steps.changed-files.outputs.github-actions_any_changed }}
       packages: ${{ steps.changed-files.outputs.packages_any_changed }}
       plugins: ${{ steps.changed-files.outputs.plugins_any_changed }}
@@ -26,6 +27,8 @@ jobs:
         uses: tj-actions/changed-files@8cba46e29c11878d930bca7870bb54394d3e8b21 # v47.0.2
         with:
           files_yaml: |
+            format:
+              - '**/*.{ts,tsx,js,jsx,json,md,yaml,yml,css}'
             github-actions:
               - .github/**
             packages:
@@ -36,6 +39,13 @@ jobs:
             plugins:
               - plugins/**
               - .claude-plugin/marketplace.json
+
+  check-format:
+    needs: changed-files
+    if: needs.changed-files.outputs.format == 'true'
+    uses: ./.github/workflows/reusable-check-format.yaml
+    permissions:
+      contents: read
 
   check-github-actions:
     needs: changed-files
@@ -63,6 +73,7 @@ jobs:
     timeout-minutes: 5
     if: always()
     needs:
+      - check-format
       - check-github-actions
       - check-packages
       - check-plugins
