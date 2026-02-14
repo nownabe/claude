@@ -4,19 +4,15 @@ This project uses [Changesets](https://github.com/changesets/changesets) and [np
 
 ## Overview
 
-```
-Developer adds changeset → PR merged to main
-                                ↓
-                  changesets/action detects pending changesets
-                                ↓
-                  Creates/updates "Version Packages" PR
-                  (bumps versions, updates CHANGELOGs)
-                                ↓
-                  Maintainer reviews & merges the PR
-                                ↓
-                  changesets/action detects no pending changesets
-                                ↓
-                  Publishes to npm (via OIDC) → creates GitHub Releases
+```mermaid
+flowchart TD
+    A[Developer adds changeset] --> B[PR merged to main]
+    B --> C{Pending changesets?}
+    C -- Yes --> D[Create/update Version Packages PR]
+    D --> E[Maintainer reviews & merges]
+    E --> B
+    C -- No --> F[Publish to npm via OIDC]
+    F --> G[Create GitHub Releases]
 ```
 
 ## Adding a Changeset
