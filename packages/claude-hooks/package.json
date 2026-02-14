@@ -5,6 +5,7 @@
   "files": [
     "src"
   ],
+  "type": "module",
   "publishConfig": {
     "access": "public"
   },
@@ -12,6 +13,5 @@
     "test": "bun test",
     "lint": "oxlint src/",
     "typecheck": "tsc --noEmit"
-  },
-  "type": "module"
+  }
 }
