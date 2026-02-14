@@ -1,12 +1,10 @@
 {
   "name": "@nownabe/claude-hooks",
   "version": "0.0.1",
+  "main": "./dist/index.js",
   "files": [
     "dist"
   ],
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
@@ -15,5 +13,7 @@
     "test": "bun test",
     "lint": "oxlint src/",
     "typecheck": "tsc --noEmit"
-  }
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
 }
