@@ -6,8 +6,8 @@ This repository is a monorepo managed with [bun workspaces](https://bun.sh/docs/
 
 ## Packages
 
-| Package | Path | Description |
-|---------|------|-------------|
+| Package                 | Path                    | Description       |
+| ----------------------- | ----------------------- | ----------------- |
 | `@nownabe/claude-tools` | `packages/claude-tools` | Claude Code tools |
 | `@nownabe/claude-hooks` | `packages/claude-hooks` | Claude Code hooks |
 
