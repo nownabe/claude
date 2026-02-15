@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
 
 import { main as preBash } from "./pre-bash";
+import { main as notification } from "./notification";
 
 const commands: Record<string, () => Promise<void>> = {
   "pre-bash": preBash,
+  notification: notification,
 };
 
 const name = process.argv[2];
