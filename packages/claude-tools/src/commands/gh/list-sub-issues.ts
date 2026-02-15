@@ -26,8 +26,13 @@ export async function listSubIssues(
 }
 
 export async function main(): Promise<void> {
-  const rawArgs = process.argv.slice(4);
-  const { remaining, owner: flagOwner, repo: flagRepo } = parseRepoFlag(rawArgs);
+  const {
+    remaining: allArgs,
+    owner: flagOwner,
+    repo: flagRepo,
+  } = parseRepoFlag(process.argv.slice(2));
+  // allArgs[0] = group ("gh"), allArgs[1] = command ("list-sub-issues"), rest = positional args
+  const remaining = allArgs.slice(2);
 
   if (remaining.length < 1) {
     console.error("Usage: claude-tools gh list-sub-issues <issue_number> [--repo <owner/repo>]");
