@@ -34,7 +34,7 @@ export async function addSubIssue(
     "api",
     `repos/${owner}/${repo}/issues/${subIssueNumber}`,
     "--jq",
-    ".node_id",
+    ".id",
   ]);
 
   if (idResult.exitCode !== 0) {

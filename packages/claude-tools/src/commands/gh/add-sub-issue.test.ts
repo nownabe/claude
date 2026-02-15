@@ -16,7 +16,7 @@ function createMockRunner(responses: { stdout: string; stderr: string; exitCode:
 describe("addSubIssue", () => {
   it("should get sub-issue ID and add it as sub-issue", async () => {
     const { fn, calls } = createMockRunner([
-      { stdout: "I_abc123", stderr: "", exitCode: 0 },
+      { stdout: "12345", stderr: "", exitCode: 0 },
       { stdout: '{"id": 1}', stderr: "", exitCode: 0 },
     ]);
 
@@ -31,14 +31,14 @@ describe("addSubIssue", () => {
     );
 
     expect(calls).toHaveLength(2);
-    expect(calls[0]).toEqual(["api", "repos/myorg/myrepo/issues/2", "--jq", ".node_id"]);
+    expect(calls[0]).toEqual(["api", "repos/myorg/myrepo/issues/2", "--jq", ".id"]);
     expect(calls[1]).toEqual([
       "api",
       "repos/myorg/myrepo/issues/1/sub_issues",
       "--method",
       "POST",
       "--field",
-      "sub_issue_id=I_abc123",
+      "sub_issue_id=12345",
     ]);
   });
 
@@ -71,7 +71,7 @@ describe("addSubIssue", () => {
 
   it("should exit with error when adding sub-issue fails", async () => {
     const { fn } = createMockRunner([
-      { stdout: "I_abc123", stderr: "", exitCode: 0 },
+      { stdout: "12345", stderr: "", exitCode: 0 },
       { stdout: "", stderr: "Forbidden", exitCode: 1 },
     ]);
 
