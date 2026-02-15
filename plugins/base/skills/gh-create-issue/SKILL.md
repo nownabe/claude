@@ -13,7 +13,6 @@ Create a GitHub issue using the `gh issue create` command.
 ## Optional inputs
 
 - **Labels**: One or more labels to apply
-- **Assignees**: One or more users to assign
 - **Milestone**: A milestone to associate with the issue
 - **Parent issue**: A parent issue number to set as the parent (sub-issue)
 
@@ -69,8 +68,8 @@ The issue body MUST follow this template. Fill in each section based on the user
    gh issue create \
      --title "<title>" \
      --body "<body>" \
+     --assignee "nownabe" \
      [--label "<label>"] \
-     [--assignee "<assignee>"] \
      [--milestone "<milestone>"]
    ```
 
