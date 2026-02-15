@@ -1,5 +1,5 @@
 import { describe, it, expect, mock } from "bun:test";
-import { addSubIssue } from "../src/commands/gh/add-sub-issue";
+import { addSubIssue } from "./add-sub-issue";
 
 function createMockRunner(responses: { stdout: string; stderr: string; exitCode: number }[]) {
   let callIndex = 0;
