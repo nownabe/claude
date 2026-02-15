@@ -17,62 +17,65 @@ Create a GitHub issue using the `gh issue create` command.
 - **Milestone**: A milestone to associate with the issue
 - **Parent issue**: A parent issue number to set as the parent (sub-issue)
 
-## Issue body structure
+## Issue body template
 
-The issue body MUST follow this structure:
+The issue body MUST follow this template. Fill in each section based on the user's input.
 
-### Overview
+```markdown
+## Overview
 
-A concise summary of the issue.
+<!-- A concise summary of the issue. -->
 
-### Goal
+## Goal
 
-The purpose and success criteria. What should be achieved and how will completion be measured?
+<!-- The purpose and success criteria. What should be achieved and how will completion be measured? -->
 
-### Context
+## Context
 
-Background information, current state, and any related decisions or discussions.
+<!-- Background information, current state, and any related decisions or discussions. -->
 
-### Expected Impact
+## Expected Impact
 
-The expected outcomes and benefits of resolving this issue.
+<!-- The expected outcomes and benefits of resolving this issue. -->
 
-### Acceptance Criteria
+## Acceptance Criteria
 
-A checklist of specific, verifiable conditions that must be met.
+- [ ] <!-- Specific, verifiable condition 1 -->
+- [ ] <!-- Specific, verifiable condition 2 -->
 
-### References
+## References
 
-Links to related documents, PRs, discussions, or external resources.
+<!-- Links to related documents, PRs, discussions, or external resources. -->
 
-### Implementation ideas
+## Implementation ideas
 
-Initial ideas on how this could be implemented. Note: these are preliminary thoughts at issue creation time and have not been thoroughly considered from an implementation perspective. During design, revisit the goal and re-evaluate the approach from scratch.
+<!-- Initial ideas on how this could be implemented. -->
 
-## Pre-creation checks
-
-Before creating the issue, perform the following checks:
-
-1. **Duplicate check**: Search existing open issues (`gh issue list`) to verify there is no duplicate issue. If a potential duplicate is found, inform the user and ask how to proceed.
-2. **Related issues**: Search for related issues. If related issues exist, consider whether they should have a parent-child relationship with the new issue.
-
-## Sub-issues
-
-If the user specifies a parent issue or you identify a suitable parent issue during the related issues check:
-
-- Verify the parent issue is **not closed** (do not set a closed issue as the parent).
-- After creating the issue, set the parent using `gh issue edit <number> --add-parent <parent-number>`.
+> **Note**: These are preliminary thoughts at issue creation time and have not been thoroughly considered from an implementation perspective. During design, revisit the goal and re-evaluate the approach from scratch.
+```
 
 ## Instructions
 
 1. Gather the title, body content, and any optional inputs from the user.
-2. Perform the pre-creation checks (duplicate and related issues).
-3. Compose the issue body following the structure above.
-4. Run `gh issue create` with the provided arguments:
-   - `--title "<title>"`
-   - `--body "<body>"`
-   - `--label "<label>"` for each label (if provided)
-   - `--assignee "<assignee>"` for each assignee (if provided)
-   - `--milestone "<milestone>"` if provided
-5. If a parent issue is specified and it is open, run `gh issue edit <number> --add-parent <parent-number>`.
+
+2. **Pre-creation checks**:
+   - Search existing open issues (`gh issue list -s open -S "<keywords>"`) to verify there is no duplicate. If a potential duplicate is found, inform the user and ask how to proceed.
+   - Search for related issues. If related issues exist, consider whether they should have a parent-child relationship with the new issue and suggest it to the user.
+
+3. Compose the issue body using the template above.
+
+4. Create the issue:
+   ```sh
+   gh issue create \
+     --title "<title>" \
+     --body "<body>" \
+     [--label "<label>"] \
+     [--assignee "<assignee>"] \
+     [--milestone "<milestone>"]
+   ```
+
+5. **Set parent issue** (if applicable):
+   - If a parent issue is specified or identified in step 2, verify it is **not closed** (`gh issue view <parent-number> --json state`).
+   - If the parent issue is open, link it: `gh issue edit <number> --add-parent <parent-number>`.
+
 6. Return the URL of the created issue to the user.
