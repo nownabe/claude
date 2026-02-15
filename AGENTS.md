@@ -7,6 +7,11 @@ This repository is a Claude Code plugin marketplace.
 ```
 .claude-plugin/
   marketplace.json   # Marketplace manifest listing all plugins
+packages/
+  <package-name>/    # TypeScript packages (bun workspaces)
+    src/
+    tests/
+    package.json
 plugins/
   <plugin-name>/
     .claude-plugin/
@@ -14,6 +19,8 @@ plugins/
     skills/
       <skill-name>/
         SKILL.md     # Skill definition with YAML frontmatter + instructions
+.github/
+  workflows/         # GitHub Actions CI/CD workflows
 ```
 
 ## Conventions
@@ -21,6 +28,31 @@ plugins/
 - **Commit messages**: Use [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `docs:`, `chore:`)
 - **Branching**: Create a feature branch from `main` for each change, then open a pull request
 - **Language**: Write all user-facing content (README, PR descriptions, etc.) in English
+
+## Workflow
+
+- Work autonomously and create a pull request when done, then ask the user for review
+- If design decisions are needed, present the design to the user for review **before** starting implementation
+
+## Pre-commit Checks
+
+Run the appropriate checks before committing, depending on what was changed:
+
+| Changed files                 | Command                           |
+| ----------------------------- | --------------------------------- |
+| `packages/**`                 | `bun run check`                   |
+| `.github/**` (GitHub Actions) | `zizmor`, `actionlint`, `ghalint` |
+| `*.md`, `*.json`              | `bun run format`                  |
+
+## Changesets
+
+When making changes to packages that affect released artifacts (feature additions, bug fixes, etc.), run:
+
+```
+bun run changeset
+```
+
+This is **not** needed for documentation-only or CI-only changes.
 
 ## Adding a Plugin
 
