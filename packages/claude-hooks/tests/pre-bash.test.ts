@@ -7,6 +7,7 @@ import {
   checkForbiddenPatterns,
   globToRegExp,
   splitCommand,
+  parsePattern,
   type ActivePattern,
 } from "../src/pre-bash";
 
@@ -88,6 +89,32 @@ describe("globToRegExp", () => {
   });
 });
 
+describe("parsePattern", () => {
+  test("treats /pattern/ as regex", () => {
+    const re = parsePattern("/\\bgit\\s+-C\\b/");
+    expect(re.test("git -C /tmp")).toBe(true);
+    expect(re.test("git status")).toBe(false);
+  });
+
+  test("supports regex flags", () => {
+    const re = parsePattern("/curl/i");
+    expect(re.test("CURL")).toBe(true);
+    expect(re.test("curl")).toBe(true);
+  });
+
+  test("falls back to glob for non-regex patterns", () => {
+    const re = parsePattern("git commit *");
+    expect(re.test("git commit -m msg")).toBe(true);
+    expect(re.test("git commitall")).toBe(false);
+  });
+
+  test("treats pattern without slashes as glob", () => {
+    const re = parsePattern("git status");
+    expect(re.test("git status")).toBe(true);
+    expect(re.test("git status --short")).toBe(false);
+  });
+});
+
 describe("checkForbiddenPatterns", () => {
   describe("with glob patterns", () => {
     const patterns: ActivePattern[] = [
@@ -141,10 +168,10 @@ describe("checkForbiddenPatterns", () => {
     });
   });
 
-  describe("with regex patterns", () => {
+  describe("with /regex/ patterns", () => {
     const patterns: ActivePattern[] = [
       {
-        pattern: "\\bgit\\s+-C\\b",
+        pattern: "/\\bgit\\s+-C\\b/",
         reason: "git -C is forbidden",
         suggestion: "Use cd instead",
       },
@@ -157,6 +184,13 @@ describe("checkForbiddenPatterns", () => {
 
     test("returns null when regex does not match", () => {
       expect(checkForbiddenPatterns("git status", patterns)).toBeNull();
+    });
+
+    test("supports regex flags", () => {
+      const patterns: ActivePattern[] = [
+        { pattern: "/curl/i", reason: "no curl", suggestion: "use fetch" },
+      ];
+      expect(checkForbiddenPatterns("CURL https://example.com", patterns)).not.toBeNull();
     });
   });
 });

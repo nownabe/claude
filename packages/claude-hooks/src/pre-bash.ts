@@ -153,8 +153,18 @@ export function globToRegExp(pattern: string): RegExp {
   return new RegExp(regex);
 }
 
-function isGlobPattern(pattern: string): boolean {
-  return pattern.includes("*");
+/**
+ * Parse a pattern string into a RegExp.
+ *
+ * - `/pattern/` or `/pattern/flags` → treated as a regex
+ * - Everything else → treated as a glob pattern
+ */
+export function parsePattern(pattern: string): RegExp {
+  const regexMatch = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
+  if (regexMatch) {
+    return new RegExp(regexMatch[1], regexMatch[2]);
+  }
+  return globToRegExp(pattern);
 }
 
 export function checkForbiddenPatterns(
@@ -164,7 +174,7 @@ export function checkForbiddenPatterns(
   const subCommands = splitCommand(command);
 
   for (const { pattern, reason, suggestion } of patterns) {
-    const re = isGlobPattern(pattern) ? globToRegExp(pattern) : new RegExp(pattern);
+    const re = parsePattern(pattern);
 
     for (const sub of subCommands) {
       if (re.test(sub)) {

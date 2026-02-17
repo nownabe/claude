@@ -96,9 +96,9 @@ Add a `preBash` section to your `.claude/nownabe-claude-hooks.json`. Patterns ar
 
 #### Pattern types
 
-Two pattern formats are supported:
+Two pattern formats are supported. Patterns are treated as **glob by default**; wrap in `/` delimiters for regex.
 
-**Glob patterns** (Claude Code style) — patterns containing `*`:
+**Glob patterns** (default, Claude Code style):
 
 | Pattern        | Matches                               | Does not match  |
 | -------------- | ------------------------------------- | --------------- |
@@ -108,12 +108,13 @@ Two pattern formats are supported:
 | `* --version`  | `node --version`, `bun --version`     |                 |
 | `git commit:*` | Same as `git commit *` (deprecated)   |                 |
 
-**Regex patterns** — patterns without `*`:
+**Regex patterns** — wrap in `/` delimiters (like JavaScript), optionally with flags:
 
-| Pattern        | Matches                       |
-| -------------- | ----------------------------- |
-| `\bgit\s+-C\b` | `git -C /tmp status`          |
-| `\bcurl\b`     | Any command containing `curl` |
+| Pattern          | Matches                       |
+| ---------------- | ----------------------------- |
+| `/\bgit\s+-C\b/` | `git -C /tmp status`          |
+| `/\bcurl\b/`     | Any command containing `curl` |
+| `/curl/i`        | `curl`, `CURL`, `Curl`        |
 
 #### Shell operator awareness
 
