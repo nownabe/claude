@@ -73,21 +73,31 @@ interface HookOutput {
 
 // --- Feature: Forbidden Command Patterns ---
 
-export type ForbiddenPatternEntry =
-  | { pattern: string; reason: string; suggestion: string; disabled?: false }
-  | { pattern: string; disabled: true };
+export type ForbiddenPatternConfig =
+  | { reason: string; suggestion: string; disabled?: false }
+  | { disabled: true };
 
 /**
  * Load forbidden patterns from the unified config.
- * Reads `config.preBash.forbiddenPatterns` and filters out disabled entries.
+ * Reads `config.preBash.forbiddenPatterns` (keyed by pattern string) and
+ * filters out disabled entries.
  */
 export function loadForbiddenPatterns(cwd: string): ActivePattern[] {
   const config = loadConfig(cwd);
-  const patterns = config.preBash?.forbiddenPatterns ?? [];
-  return patterns.filter((entry): entry is ActivePattern => !entry.disabled);
+  const patterns = config.preBash?.forbiddenPatterns ?? {};
+  return Object.entries(patterns)
+    .filter(([, entry]) => !entry.disabled)
+    .map(([pattern, entry]) => {
+      const active = entry as Exclude<ForbiddenPatternConfig, { disabled: true }>;
+      return { pattern, reason: active.reason, suggestion: active.suggestion };
+    });
 }
 
-export type ActivePattern = Extract<ForbiddenPatternEntry, { reason: string }>;
+export interface ActivePattern {
+  pattern: string;
+  reason: string;
+  suggestion: string;
+}
 
 export function checkForbiddenPatterns(
   command: string,
