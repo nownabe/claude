@@ -100,13 +100,15 @@ describe("loadConfig", () => {
   test("loads config from HOME", () => {
     writeConfig(tmpDir, {
       preBash: {
-        forbiddenPatterns: [{ pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" }],
+        forbiddenPatterns: {
+          "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+        },
       },
     });
     const config = loadConfig(tmpDir);
-    expect(config.preBash?.forbiddenPatterns).toEqual([
-      { pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" },
-    ]);
+    expect(config.preBash?.forbiddenPatterns).toEqual({
+      "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+    });
   });
 
   test("deep merges notification sounds from multiple levels", () => {
@@ -125,30 +127,32 @@ describe("loadConfig", () => {
     expect(config.notification?.sounds?.stop).toBe("parent-stop.wav");
   });
 
-  test("child array replaces parent array entirely", () => {
+  test("deep merges forbiddenPatterns from multiple levels", () => {
     const projectDir = join(tmpDir, "project");
     mkdirSync(projectDir, { recursive: true });
 
     writeConfig(tmpDir, {
       preBash: {
-        forbiddenPatterns: [
-          { pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" },
-          { pattern: "\\bbaz\\b", reason: "no baz", suggestion: "use qux" },
-        ],
+        forbiddenPatterns: {
+          "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+          "\\bbaz\\b": { reason: "no baz", suggestion: "use qux" },
+        },
       },
     });
     writeConfig(projectDir, {
       preBash: {
-        forbiddenPatterns: [
-          { pattern: "\\bonly\\b", reason: "only this", suggestion: "just this" },
-        ],
+        forbiddenPatterns: {
+          "\\bonly\\b": { reason: "only this", suggestion: "just this" },
+        },
       },
     });
 
     const config = loadConfig(projectDir);
-    expect(config.preBash?.forbiddenPatterns).toEqual([
-      { pattern: "\\bonly\\b", reason: "only this", suggestion: "just this" },
-    ]);
+    expect(config.preBash?.forbiddenPatterns).toEqual({
+      "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+      "\\bbaz\\b": { reason: "no baz", suggestion: "use qux" },
+      "\\bonly\\b": { reason: "only this", suggestion: "just this" },
+    });
   });
 
   test(".local.json has higher priority than .json in same directory", () => {
@@ -211,7 +215,9 @@ describe("loadConfig", () => {
 
     writeConfig(tmpDir, {
       preBash: {
-        forbiddenPatterns: [{ pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" }],
+        forbiddenPatterns: {
+          "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+        },
       },
     });
     writeConfig(projectDir, {
@@ -219,9 +225,9 @@ describe("loadConfig", () => {
     });
 
     const config = loadConfig(projectDir);
-    expect(config.preBash?.forbiddenPatterns).toEqual([
-      { pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" },
-    ]);
+    expect(config.preBash?.forbiddenPatterns).toEqual({
+      "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+    });
     expect(config.notification?.sounds?.["*"]).toBe("child.wav");
   });
 

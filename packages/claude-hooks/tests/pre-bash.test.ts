@@ -72,27 +72,58 @@ describe("loadForbiddenPatterns", () => {
 
   test("loads patterns from HOME", () => {
     writeConfig(tmpDir, {
-      forbiddenPatterns: [{ pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" }],
+      forbiddenPatterns: {
+        "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+      },
     });
     expect(loadForbiddenPatterns(tmpDir)).toEqual([
       { pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" },
     ]);
   });
 
-  test("child array replaces parent array entirely", () => {
+  test("merges parent and child patterns", () => {
     const projectDir = join(tmpDir, "project");
     mkdirSync(projectDir, { recursive: true });
 
     writeConfig(tmpDir, {
-      forbiddenPatterns: [{ pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" }],
+      forbiddenPatterns: {
+        "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+      },
     });
     writeConfig(projectDir, {
-      forbiddenPatterns: [{ pattern: "\\bbaz\\b", reason: "no baz", suggestion: "use qux" }],
+      forbiddenPatterns: {
+        "\\bbaz\\b": { reason: "no baz", suggestion: "use qux" },
+      },
+    });
+
+    const result = loadForbiddenPatterns(projectDir);
+    expect(result).toHaveLength(2);
+    expect(result.find((p) => p.pattern === "\\bfoo\\b")).toBeTruthy();
+    expect(result.find((p) => p.pattern === "\\bbaz\\b")).toBeTruthy();
+  });
+
+  test("child can override parent pattern config", () => {
+    const projectDir = join(tmpDir, "project");
+    mkdirSync(projectDir, { recursive: true });
+
+    writeConfig(tmpDir, {
+      forbiddenPatterns: {
+        "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+      },
+    });
+    writeConfig(projectDir, {
+      forbiddenPatterns: {
+        "\\bfoo\\b": { reason: "updated reason", suggestion: "updated suggestion" },
+      },
     });
 
     const result = loadForbiddenPatterns(projectDir);
     expect(result).toHaveLength(1);
-    expect(result[0].pattern).toBe("\\bbaz\\b");
+    expect(result[0]).toEqual({
+      pattern: "\\bfoo\\b",
+      reason: "updated reason",
+      suggestion: "updated suggestion",
+    });
   });
 
   test("inherits parent patterns when child has no preBash section", () => {
@@ -100,7 +131,9 @@ describe("loadForbiddenPatterns", () => {
     mkdirSync(projectDir, { recursive: true });
 
     writeConfig(tmpDir, {
-      forbiddenPatterns: [{ pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" }],
+      forbiddenPatterns: {
+        "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+      },
     });
     // child has no preBash config at all — write a config with only notification
     const claudeDir = join(projectDir, ".claude");
@@ -115,12 +148,33 @@ describe("loadForbiddenPatterns", () => {
     expect(result[0].pattern).toBe("\\bfoo\\b");
   });
 
+  test("child can disable parent pattern", () => {
+    const projectDir = join(tmpDir, "project");
+    mkdirSync(projectDir, { recursive: true });
+
+    writeConfig(tmpDir, {
+      forbiddenPatterns: {
+        "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+        "\\bbaz\\b": { reason: "no baz", suggestion: "use qux" },
+      },
+    });
+    writeConfig(projectDir, {
+      forbiddenPatterns: {
+        "\\bfoo\\b": { disabled: true },
+      },
+    });
+
+    const result = loadForbiddenPatterns(projectDir);
+    expect(result).toHaveLength(1);
+    expect(result[0].pattern).toBe("\\bbaz\\b");
+  });
+
   test("filters out disabled entries", () => {
     writeConfig(tmpDir, {
-      forbiddenPatterns: [
-        { pattern: "\\bfoo\\b", reason: "no foo", suggestion: "use bar" },
-        { pattern: "\\bbaz\\b", disabled: true },
-      ],
+      forbiddenPatterns: {
+        "\\bfoo\\b": { reason: "no foo", suggestion: "use bar" },
+        "\\bbaz\\b": { disabled: true },
+      },
     });
 
     const result = loadForbiddenPatterns(tmpDir);
