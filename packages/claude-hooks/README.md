@@ -110,11 +110,13 @@ Two pattern formats are supported. Patterns are treated as **glob by default**; 
 
 **Regex patterns** — wrap in `/` delimiters (like JavaScript), optionally with flags:
 
-| Pattern          | Matches                       |
-| ---------------- | ----------------------------- |
-| `/\bgit\s+-C\b/` | `git -C /tmp status`          |
-| `/\bcurl\b/`     | Any command containing `curl` |
-| `/curl/i`        | `curl`, `CURL`, `Curl`        |
+| Pattern                 | Matches                               | Equivalent glob |
+| ----------------------- | ------------------------------------- | --------------- |
+| `/^git commit(\s.*)?$/` | `git commit -m msg`, `git commit`     | `git commit *`  |
+| `/^git/`                | `git`, `gitk`, `git status`           | `git*`          |
+| `/^git\s.*main$/`       | `git checkout main`, `git merge main` | `git * main`    |
+| `/\bgit\s+-C\b/`        | `git -C /tmp status`                  |                 |
+| `/curl/i`               | `curl`, `CURL`, `Curl`                |                 |
 
 **Explicit `type` field** — you can also set `"type": "glob"` or `"type": "regex"` to override auto-detection. This is useful when the pattern key itself would be ambiguous (e.g., a regex without `/` delimiters or a glob path containing `/`):
 
