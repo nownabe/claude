@@ -49,6 +49,7 @@ jobs:
           publish: bun run release
           title: "chore: version packages"
           commit: "chore: version packages"
+          commitMode: "github-api"
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NODE_AUTH_TOKEN: ""
