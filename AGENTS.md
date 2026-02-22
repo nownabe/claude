@@ -25,6 +25,7 @@ plugins/
 
 ## Conventions
 
+- **Package manager**: Always use `bun` and `bunx`. Never use `npm`, `npx`, `yarn`, or `pnpm`
 - **Commit messages**: Use [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `docs:`, `chore:`)
 - **Branching**: Create a feature branch from `main` for each change, then open a pull request
 - **Language**: Write all user-facing content (README, PR descriptions, etc.) in English
