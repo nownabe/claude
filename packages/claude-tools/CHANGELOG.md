@@ -1,5 +1,13 @@
 # @nownabe/claude-tools
 
+## 0.2.0
+
+### Minor Changes
+
+- aac998a: Add `gh get-actions-run` command to retrieve GitHub Actions workflow run information
+- fb7d773: Add `gh get-release` command to fetch release information from a GitHub repository
+- aee79b2: Add `gh resolve-tag-sha` command to resolve a GitHub tag to its commit SHA
+
 ## 0.1.0
 
 ### Minor Changes
