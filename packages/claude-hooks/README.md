@@ -2,10 +2,10 @@
 
 A collection of [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) for enhanced workflow automation.
 
-## Installation
+## Usage
 
 ```bash
-npm install -g @nownabe/claude-hooks
+bunx @nownabe/claude-hooks <hook>
 ```
 
 ## Configuration
