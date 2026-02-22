@@ -15,7 +15,7 @@ Add to your `settings.json` (`~/.claude/settings.json`, `.claude/settings.json`,
         "hooks": [
           {
             "type": "command",
-            "command": "npx @nownabe/claude-hooks pre-bash"
+            "command": "bunx @nownabe/claude-hooks pre-bash"
           }
         ]
       }
