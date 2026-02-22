@@ -24,10 +24,8 @@ Browse and install plugins:
 
 ## Tools
 
-Install:
-
 ```bash
-npm install -g @nownabe/claude-tools
+bunx @nownabe/claude-tools <command>
 ```
 
 | Command              | Description                                      |
@@ -41,10 +39,8 @@ See [packages/claude-tools/README.md](packages/claude-tools/README.md) for detai
 
 ## Hooks
 
-Install:
-
 ```bash
-npm install -g @nownabe/claude-hooks
+bunx @nownabe/claude-hooks <hook>
 ```
 
 | Hook           | Description                               |

@@ -2,10 +2,10 @@
 
 A collection of CLI tools for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) workflows. Provides GitHub-related utilities via the `gh` command group.
 
-## Installation
+## Usage
 
 ```bash
-npm install -g @nownabe/claude-tools
+bunx @nownabe/claude-tools <command>
 ```
 
 ## Prerequisites
