@@ -42,7 +42,7 @@ Before a package can be published via Trusted Publishing, it must already exist 
 
 1. Publish an initial version manually or with [`setup-npm-trusted-publish`](https://github.com/azu/setup-npm-trusted-publish):
    ```sh
-   npx setup-npm-trusted-publish @nownabe/<package-name>
+   bunx setup-npm-trusted-publish @nownabe/<package-name>
    ```
 2. On npmjs.com, go to the package Settings → Trusted Publisher and configure:
    - Repository owner: `nownabe`
