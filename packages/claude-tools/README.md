@@ -11,7 +11,6 @@ bunx @nownabe/claude-tools <command>
 ## Prerequisites
 
 - [GitHub CLI (`gh`)](https://cli.github.com/) must be installed and authenticated
-- For `add-sub-issues` and `list-sub-issues`, the `--repo` flag is optional — if omitted, the repository is detected from the current working directory
 
 ## Commands
 
