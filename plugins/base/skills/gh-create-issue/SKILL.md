@@ -65,11 +65,10 @@ Compose the issue body using this template exactly. Fill in each section from th
    gh issue create --title "<title>" --body "<body>" --assignee "nownabe" [--label "<label>"] [--milestone "<milestone>"]
    ```
 
-5. If a parent issue is applicable, verify it is open and link via the REST API:
+5. If a parent issue is applicable, verify it is open and link using `@nownabe/claude-tools`:
 
    ```sh
-   SUB_ISSUE_ID=$(gh api "repos/{owner}/{repo}/issues/<number>" --jq '.id')
-   gh api "repos/{owner}/{repo}/issues/<parent-number>/sub_issues" -X POST -f "sub_issue_id=$SUB_ISSUE_ID"
+   bunx @nownabe/claude-tools gh add-sub-issues <parent-number> <number>
    ```
 
 6. Return the created issue URL to the user.
