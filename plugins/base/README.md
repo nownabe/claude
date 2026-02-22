@@ -6,24 +6,7 @@ A general-purpose plugin with essential skills, commands, agents, and hooks for 
 
 ### `gh-create-issue`
 
-Create a GitHub issue using the `gh` CLI. Handles issue body composition, duplicate checking, and sub-issue linking.
-
-**Inputs:**
-
-- **Title** (required)
-- **Body content** (required) — fills a structured template with Overview, Goal, Context, Expected Impact, Acceptance Criteria, References, and Implementation ideas
-- **Labels** (optional)
-- **Milestone** (optional)
-- **Parent issue number** (optional) — links the new issue as a sub-issue
-
-**Procedure:**
-
-1. Gather title, body content, and optional inputs from the user
-2. Search for duplicate/related issues and inform the user if any are found
-3. Compose the issue body using the built-in template
-4. Create the issue with `gh issue create`
-5. If a parent issue is specified, link via the GitHub REST API
-6. Return the created issue URL
+Use when you want to file a new issue, report a bug, request a feature, or create a task on GitHub.
 
 ## Hooks
 
