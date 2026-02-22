@@ -15,7 +15,7 @@ Add to your `settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "npx @nownabe/claude-hooks notification"
+            "command": "bunx @nownabe/claude-hooks notification"
           }
         ]
       }
