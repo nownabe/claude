@@ -1,5 +1,11 @@
 # @nownabe/claude-tools
 
+## 0.3.0
+
+### Minor Changes
+
+- f1fcc5d: Add `gh list-run-jobs` command to list jobs from a GitHub Actions workflow run
+
 ## 0.2.0
 
 ### Minor Changes
