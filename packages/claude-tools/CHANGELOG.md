@@ -1,5 +1,11 @@
 # @nownabe/claude-tools
 
+## 0.4.0
+
+### Minor Changes
+
+- 8488554: Add `gh get-job-logs` command to get logs from a GitHub Actions job
+
 ## 0.3.0
 
 ### Minor Changes
