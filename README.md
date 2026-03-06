@@ -33,6 +33,7 @@ bunx @nownabe/claude-tools <command>
 | `gh add-sub-issues`  | Add sub-issues to a parent GitHub issue          |
 | `gh get-actions-run` | Get GitHub Actions workflow run information      |
 | `gh get-release`     | Get release information from a GitHub repository |
+| `gh list-run-jobs`   | List jobs from a GitHub Actions workflow run     |
 | `gh list-sub-issues` | List sub-issues of a GitHub issue                |
 | `gh resolve-tag-sha` | Resolve a GitHub tag to its commit SHA           |
 
