@@ -28,15 +28,16 @@ Browse and install plugins:
 bunx @nownabe/claude-tools <command>
 ```
 
-| Command              | Description                                      |
-| -------------------- | ------------------------------------------------ |
-| `gh add-sub-issues`  | Add sub-issues to a parent GitHub issue          |
-| `gh get-actions-run` | Get GitHub Actions workflow run information      |
-| `gh get-job-logs`    | Get logs from a GitHub Actions job               |
-| `gh get-release`     | Get release information from a GitHub repository |
-| `gh list-run-jobs`   | List jobs from a GitHub Actions workflow run     |
-| `gh list-sub-issues` | List sub-issues of a GitHub issue                |
-| `gh resolve-tag-sha` | Resolve a GitHub tag to its commit SHA           |
+| Command               | Description                                      |
+| --------------------- | ------------------------------------------------ |
+| `gh add-sub-issues`   | Add sub-issues to a parent GitHub issue          |
+| `gh get-actions-run`  | Get GitHub Actions workflow run information      |
+| `gh get-job-logs`     | Get logs from a GitHub Actions job               |
+| `gh get-release`      | Get release information from a GitHub repository |
+| `gh get-repo-content` | Get file content from a GitHub repository        |
+| `gh list-run-jobs`    | List jobs from a GitHub Actions workflow run     |
+| `gh list-sub-issues`  | List sub-issues of a GitHub issue                |
+| `gh resolve-tag-sha`  | Resolve a GitHub tag to its commit SHA           |
 
 See [packages/claude-tools/README.md](packages/claude-tools/README.md) for details.
 
