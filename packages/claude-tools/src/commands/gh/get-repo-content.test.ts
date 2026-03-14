@@ -14,7 +14,37 @@ function createMockRunner(responses: { stdout: string; stderr: string; exitCode:
 }
 
 describe("getRepoContent", () => {
-  it("should return raw API response", async () => {
+  it("should decode base64 content by default", async () => {
+    const content = "name: cuelsp\nversion: 0.1.0\n";
+    const encoded = btoa(content);
+    const { fn, calls } = createMockRunner([{ stdout: encoded, stderr: "", exitCode: 0 }]);
+
+    const result = await getRepoContent(
+      { repo: "mason-org/mason-registry", path: "packages/cuelsp/package.yaml" },
+      fn,
+    );
+
+    expect(result).toBe(content);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual([
+      "api",
+      "repos/mason-org/mason-registry/contents/packages/cuelsp/package.yaml",
+      "--jq",
+      ".content",
+    ]);
+  });
+
+  it("should handle base64 content with newlines", async () => {
+    const content = "line1\nline2\nline3\n";
+    const encoded = `${btoa(content).slice(0, 10)}\n${btoa(content).slice(10)}`;
+    const { fn } = createMockRunner([{ stdout: encoded, stderr: "", exitCode: 0 }]);
+
+    const result = await getRepoContent({ repo: "owner/repo", path: "file.txt" }, fn);
+
+    expect(result).toBe(content);
+  });
+
+  it("should return raw API JSON when raw is true", async () => {
     const apiResponse = JSON.stringify({
       name: "package.yaml",
       path: "packages/cuelsp/package.yaml",
@@ -24,12 +54,11 @@ describe("getRepoContent", () => {
     const { fn, calls } = createMockRunner([{ stdout: apiResponse, stderr: "", exitCode: 0 }]);
 
     const result = await getRepoContent(
-      { repo: "mason-org/mason-registry", path: "packages/cuelsp/package.yaml" },
+      { repo: "mason-org/mason-registry", path: "packages/cuelsp/package.yaml", raw: true },
       fn,
     );
 
     expect(result).toBe(apiResponse);
-    expect(calls).toHaveLength(1);
     expect(calls[0]).toEqual([
       "api",
       "repos/mason-org/mason-registry/contents/packages/cuelsp/package.yaml",
@@ -37,16 +66,23 @@ describe("getRepoContent", () => {
   });
 
   it("should pass ref parameter when specified", async () => {
-    const apiResponse = JSON.stringify({ name: "file.txt", content: btoa("hello") });
-    const { fn, calls } = createMockRunner([{ stdout: apiResponse, stderr: "", exitCode: 0 }]);
+    const content = "hello";
+    const { fn, calls } = createMockRunner([{ stdout: btoa(content), stderr: "", exitCode: 0 }]);
 
     const result = await getRepoContent(
       { repo: "owner/repo", path: "file.txt", ref: "v1.0.0" },
       fn,
     );
 
-    expect(result).toBe(apiResponse);
-    expect(calls[0]).toEqual(["api", "repos/owner/repo/contents/file.txt", "-f", "ref=v1.0.0"]);
+    expect(result).toBe(content);
+    expect(calls[0]).toEqual([
+      "api",
+      "repos/owner/repo/contents/file.txt",
+      "--jq",
+      ".content",
+      "-f",
+      "ref=v1.0.0",
+    ]);
   });
 
   it("should exit with error when the API call fails", async () => {

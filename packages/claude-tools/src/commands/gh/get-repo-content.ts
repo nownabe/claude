@@ -4,16 +4,17 @@ export interface GetRepoContentOptions {
   repo: string;
   path: string;
   ref?: string;
+  raw?: boolean;
 }
 
 export async function getRepoContent(
   options: GetRepoContentOptions,
   runCommand: RunCommandFn = runGh,
 ): Promise<string> {
-  const { repo, path, ref } = options;
+  const { repo, path, ref, raw } = options;
 
   const endpoint = `repos/${repo}/contents/${path}`;
-  const args = ["api", endpoint];
+  const args = raw ? ["api", endpoint] : ["api", endpoint, "--jq", ".content"];
   if (ref) {
     args.push("-f", `ref=${ref}`);
   }
@@ -25,7 +26,11 @@ export async function getRepoContent(
     process.exit(1);
   }
 
-  return result.stdout;
+  if (raw) {
+    return result.stdout;
+  }
+
+  return atob(result.stdout.replace(/\n/g, ""));
 }
 
 export async function main(): Promise<void> {
@@ -37,6 +42,7 @@ export async function main(): Promise<void> {
   const remaining = allArgs.slice(2);
 
   let ref: string | undefined;
+  let raw = false;
   const positional: string[] = [];
 
   for (let i = 0; i < remaining.length; i++) {
@@ -47,6 +53,8 @@ export async function main(): Promise<void> {
         process.exit(1);
       }
       i++;
+    } else if (remaining[i] === "--raw") {
+      raw = true;
     } else {
       positional.push(remaining[i]);
     }
@@ -55,7 +63,7 @@ export async function main(): Promise<void> {
   const path = positional[0];
   if (!path) {
     console.error(
-      "Usage: claude-tools gh get-repo-content <path> [--ref <ref>] [--repo <owner/repo>]",
+      "Usage: claude-tools gh get-repo-content <path> [--ref <ref>] [--raw] [--repo <owner/repo>]",
     );
     process.exit(1);
   }
@@ -68,6 +76,6 @@ export async function main(): Promise<void> {
     repo = `${resolved.owner}/${resolved.repo}`;
   }
 
-  const output = await getRepoContent({ repo, path, ref });
+  const output = await getRepoContent({ repo, path, ref, raw });
   console.log(output);
 }
