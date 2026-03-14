@@ -14,7 +14,7 @@ function createMockRunner(responses: { stdout: string; stderr: string; exitCode:
 }
 
 describe("getRelease", () => {
-  it("should get the latest release with default jq", async () => {
+  it("should get the latest release", async () => {
     const { fn, calls } = createMockRunner([
       {
         stdout: JSON.stringify({ tag_name: "v1.0.0", name: "Release 1.0.0" }),
@@ -27,23 +27,7 @@ describe("getRelease", () => {
 
     expect(result).toBe(JSON.stringify({ tag_name: "v1.0.0", name: "Release 1.0.0" }));
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual(["api", "repos/owner/repo/releases/latest", "--jq", "."]);
-  });
-
-  it("should get the latest release with custom jq", async () => {
-    const { fn, calls } = createMockRunner([
-      {
-        stdout: "v1.0.0",
-        stderr: "",
-        exitCode: 0,
-      },
-    ]);
-
-    const result = await getRelease({ repo: "owner/repo", jq: ".tag_name" }, fn);
-
-    expect(result).toBe("v1.0.0");
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual(["api", "repos/owner/repo/releases/latest", "--jq", ".tag_name"]);
+    expect(calls[0]).toEqual(["api", "repos/owner/repo/releases/latest"]);
   });
 
   it("should get a release by tag", async () => {
@@ -59,7 +43,7 @@ describe("getRelease", () => {
 
     expect(result).toBe(JSON.stringify({ tag_name: "v2.0.0", body: "Release notes" }));
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual(["api", "repos/myorg/myrepo/releases/tags/v2.0.0", "--jq", "."]);
+    expect(calls[0]).toEqual(["api", "repos/myorg/myrepo/releases/tags/v2.0.0"]);
   });
 
   it("should exit with error when the API call fails", async () => {
