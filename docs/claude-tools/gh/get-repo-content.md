@@ -1,6 +1,6 @@
 # `gh get-repo-content`
 
-Get file content from a GitHub repository. Fetches the raw content of a file via the GitHub Contents API, decoding the base64 response automatically.
+Get file metadata and content from a GitHub repository via the GitHub Contents API. Returns the raw JSON response including `name`, `path`, `sha`, `size`, `content` (base64-encoded), and other fields.
 
 ## Usage
 
@@ -27,5 +27,5 @@ claude-tools gh get-repo-content <path> [--ref <ref>] [--repo <owner/repo>]
 claude-tools gh get-repo-content README.md
 claude-tools gh get-repo-content packages/cuelsp/package.yaml --repo mason-org/mason-registry
 claude-tools gh get-repo-content src/main.ts --ref v1.0.0 --repo owner/repo
-claude-tools gh get-repo-content package.json --repo nownabe/claude | jq '.name'
+claude-tools gh get-repo-content package.json --repo nownabe/claude | jq '.content'
 ```

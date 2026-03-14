@@ -13,7 +13,7 @@ export async function getRepoContent(
   const { repo, path, ref } = options;
 
   const endpoint = `repos/${repo}/contents/${path}`;
-  const args = ["api", endpoint, "--jq", ".content"];
+  const args = ["api", endpoint];
   if (ref) {
     args.push("-f", `ref=${ref}`);
   }
@@ -25,8 +25,7 @@ export async function getRepoContent(
     process.exit(1);
   }
 
-  const decoded = atob(result.stdout.replace(/\n/g, ""));
-  return decoded;
+  return result.stdout;
 }
 
 export async function main(): Promise<void> {
