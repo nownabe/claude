@@ -210,7 +210,8 @@ export async function main() {
   const input: HookInput = JSON.parse(text);
   const command = input.tool_input.command;
 
-  const forbiddenPatterns = loadForbiddenPatterns(input.cwd);
+  const cwd = input.cwd ?? process.cwd();
+  const forbiddenPatterns = loadForbiddenPatterns(cwd);
   const checkers: Checker[] = [(cmd) => checkForbiddenPatterns(cmd, forbiddenPatterns)];
 
   for (const checker of checkers) {
