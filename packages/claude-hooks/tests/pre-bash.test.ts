@@ -4,11 +4,14 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import {
   loadForbiddenPatterns,
+  loadAllowedPatterns,
   checkForbiddenPatterns,
+  checkAllowedPatterns,
   globToRegExp,
   splitCommand,
   parsePattern,
   type ActivePattern,
+  type ActiveAllowedPattern,
 } from "../src/pre-bash";
 
 describe("splitCommand", () => {
@@ -131,6 +134,52 @@ describe("parsePattern", () => {
     const re = parsePattern("git\\s*push", "regex");
     expect(re.test("git push")).toBe(true);
     expect(re.test("gitpush")).toBe(true);
+  });
+});
+
+describe("checkAllowedPatterns", () => {
+  const patterns: ActiveAllowedPattern[] = [
+    { pattern: "git commit *", reason: "allow git commit" },
+    { pattern: "bun test *" },
+  ];
+
+  test("returns null when no patterns match", () => {
+    expect(checkAllowedPatterns("git push origin main", patterns)).toBeNull();
+  });
+
+  test("returns null for empty patterns", () => {
+    expect(checkAllowedPatterns("git commit -m msg", [])).toBeNull();
+  });
+
+  test("returns allowed result with reason when pattern matches", () => {
+    const result = checkAllowedPatterns('git commit -m "feat: something"', patterns);
+    expect(result).toEqual({ allowed: true, reason: "allow git commit" });
+  });
+
+  test("returns allowed result without reason", () => {
+    const result = checkAllowedPatterns("bun test src/foo.test.ts", patterns);
+    expect(result).toEqual({ allowed: true, reason: undefined });
+  });
+
+  test("matches sub-commands in compound commands", () => {
+    const result = checkAllowedPatterns("echo hello && git commit -m msg", patterns);
+    expect(result).toEqual({ allowed: true, reason: "allow git commit" });
+  });
+
+  test("supports regex patterns", () => {
+    const regexPatterns: ActiveAllowedPattern[] = [
+      { pattern: "git\\s+commit", type: "regex", reason: "allow git commit" },
+    ];
+    const result = checkAllowedPatterns('git commit -m "msg"', regexPatterns);
+    expect(result).toEqual({ allowed: true, reason: "allow git commit" });
+  });
+
+  test("supports /regex/ auto-detection", () => {
+    const regexPatterns: ActiveAllowedPattern[] = [
+      { pattern: "/git\\s+commit/", reason: "allow git commit" },
+    ];
+    const result = checkAllowedPatterns('git commit -m "msg"', regexPatterns);
+    expect(result).toEqual({ allowed: true, reason: "allow git commit" });
   });
 });
 
@@ -257,6 +306,104 @@ describe("checkForbiddenPatterns", () => {
       expect(checkForbiddenPatterns("rm -rf /tmp/foo", patterns)).not.toBeNull();
       expect(checkForbiddenPatterns("rm -rf /home", patterns)).toBeNull();
     });
+  });
+});
+
+describe("loadAllowedPatterns", () => {
+  let tmpDir: string;
+  let originalHome: string | undefined;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "pre-bash-allowed-test-"));
+    originalHome = process.env.HOME;
+    process.env.HOME = tmpDir;
+  });
+
+  afterEach(() => {
+    process.env.HOME = originalHome;
+    rmSync(tmpDir, { recursive: true });
+  });
+
+  function writeConfig(dir: string, preBashConfig: object) {
+    const claudeDir = join(dir, ".claude");
+    mkdirSync(claudeDir, { recursive: true });
+    writeFileSync(
+      join(claudeDir, "nownabe-claude-hooks.json"),
+      JSON.stringify({ preBash: preBashConfig }),
+    );
+  }
+
+  test("returns empty array when no config files exist", () => {
+    const cwd = join(tmpDir, "a", "b");
+    mkdirSync(cwd, { recursive: true });
+    expect(loadAllowedPatterns(cwd)).toEqual([]);
+  });
+
+  test("loads patterns from HOME", () => {
+    writeConfig(tmpDir, {
+      allowedPatterns: {
+        "git commit *": { reason: "allow git commit" },
+      },
+    });
+    expect(loadAllowedPatterns(tmpDir)).toEqual([
+      { pattern: "git commit *", reason: "allow git commit" },
+    ]);
+  });
+
+  test("loads pattern without reason", () => {
+    writeConfig(tmpDir, {
+      allowedPatterns: {
+        "bun test *": {},
+      },
+    });
+    expect(loadAllowedPatterns(tmpDir)).toEqual([{ pattern: "bun test *" }]);
+  });
+
+  test("merges parent and child patterns", () => {
+    const projectDir = join(tmpDir, "project");
+    mkdirSync(projectDir, { recursive: true });
+
+    writeConfig(tmpDir, {
+      allowedPatterns: {
+        "git commit *": { reason: "allow git commit" },
+      },
+    });
+    writeConfig(projectDir, {
+      allowedPatterns: {
+        "bun test *": { reason: "allow bun test" },
+      },
+    });
+
+    const result = loadAllowedPatterns(projectDir);
+    expect(result).toHaveLength(2);
+    expect(result.find((p) => p.pattern === "git commit *")).toBeTruthy();
+    expect(result.find((p) => p.pattern === "bun test *")).toBeTruthy();
+  });
+
+  test("child can disable parent pattern", () => {
+    const projectDir = join(tmpDir, "project");
+    mkdirSync(projectDir, { recursive: true });
+
+    writeConfig(tmpDir, {
+      allowedPatterns: {
+        "git commit *": { reason: "allow git commit" },
+        "bun test *": { reason: "allow bun test" },
+      },
+    });
+    writeConfig(projectDir, {
+      allowedPatterns: {
+        "git commit *": { disabled: true },
+      },
+    });
+
+    const result = loadAllowedPatterns(projectDir);
+    expect(result).toHaveLength(1);
+    expect(result[0].pattern).toBe("bun test *");
+  });
+
+  test("returns empty array when HOME is not set", () => {
+    delete process.env.HOME;
+    expect(loadAllowedPatterns("/some/path")).toEqual([]);
   });
 });
 

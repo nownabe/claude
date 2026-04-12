@@ -1,6 +1,6 @@
-# `pre-bash` — Forbidden Command Patterns
+# `pre-bash` — Allowed & Forbidden Command Patterns
 
-A `PreToolUse` hook that blocks dangerous or unwanted Bash commands based on configurable patterns.
+A `PreToolUse` hook that auto-approves or blocks Bash commands based on configurable patterns.
 
 ## Setup
 
@@ -26,7 +26,36 @@ Add to your `settings.json` (`~/.claude/settings.json`, `.claude/settings.json`,
 
 ## Configuration
 
-Add a `preBash` section to your `.claude/nownabe-claude-hooks.json`. Patterns are specified as an object keyed by pattern string:
+Add a `preBash` section to your `.claude/nownabe-claude-hooks.json`. Patterns are specified as an object keyed by pattern string.
+
+### Allowed Patterns
+
+Allowed patterns auto-approve matching commands, bypassing Claude Code's permission system (including bash security heuristics like the multi-line command check). This is useful for commands that are known-safe but trigger false positives.
+
+```json
+{
+  "preBash": {
+    "allowedPatterns": {
+      "git commit *": {
+        "reason": "Allow git commit with any arguments"
+      },
+      "bun test *": {},
+      "bun run *": {}
+    }
+  }
+}
+```
+
+Each entry supports:
+
+| Field    | Required | Description                                       |
+| -------- | -------- | ------------------------------------------------- |
+| `reason` | No       | Displayed to the user when the command is allowed |
+| `type`   | No       | `"glob"` (default) or `"regex"`                   |
+
+**Evaluation order:** Allowed patterns are checked **before** forbidden patterns. If a command matches an allowed pattern, it is immediately approved and forbidden patterns are not evaluated.
+
+### Forbidden Patterns
 
 ```json
 {
@@ -108,7 +137,7 @@ When a command matches multiple forbidden patterns, all matching patterns are re
 
 ## Config Merging
 
-Because `forbiddenPatterns` is an object, patterns from parent and child directories are deep merged. Child directories can:
+Both `allowedPatterns` and `forbiddenPatterns` are objects, so patterns from parent and child directories are deep merged. Child directories can:
 
 - **Add** new patterns alongside inherited ones
 - **Override** an inherited pattern's reason/suggestion
@@ -117,6 +146,9 @@ Because `forbiddenPatterns` is an object, patterns from parent and child directo
 ```json
 {
   "preBash": {
+    "allowedPatterns": {
+      "git commit *": { "disabled": true }
+    },
     "forbiddenPatterns": {
       "git push --force *": { "disabled": true }
     }

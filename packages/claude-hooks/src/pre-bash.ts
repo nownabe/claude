@@ -71,6 +71,34 @@ interface HookOutput {
   };
 }
 
+// --- Feature: Allowed Command Patterns ---
+
+export type AllowedPatternConfig =
+  | { reason?: string; type?: "glob" | "regex"; disabled?: false }
+  | { disabled: true };
+
+export interface ActiveAllowedPattern {
+  pattern: string;
+  reason?: string;
+  type?: "glob" | "regex";
+}
+
+/**
+ * Load allowed patterns from the unified config.
+ * Reads `config.preBash.allowedPatterns` (keyed by pattern string) and
+ * filters out disabled entries.
+ */
+export function loadAllowedPatterns(cwd: string): ActiveAllowedPattern[] {
+  const config = loadConfig(cwd);
+  const patterns = config.preBash?.allowedPatterns ?? {};
+  return Object.entries(patterns)
+    .filter(([, entry]) => !entry.disabled)
+    .map(([pattern, entry]) => {
+      const active = entry as Exclude<AllowedPatternConfig, { disabled: true }>;
+      return { pattern, reason: active.reason, type: active.type };
+    });
+}
+
 // --- Feature: Forbidden Command Patterns ---
 
 export type ForbiddenPatternConfig =
@@ -179,6 +207,26 @@ export function parsePattern(pattern: string, type?: "glob" | "regex"): RegExp {
   return globToRegExp(pattern);
 }
 
+export function checkAllowedPatterns(
+  command: string,
+  patterns: ActiveAllowedPattern[],
+): { allowed: true; reason?: string } | null {
+  if (patterns.length === 0) return null;
+
+  const subCommands = splitCommand(command);
+
+  for (const { pattern, reason, type } of patterns) {
+    const re = parsePattern(pattern, type);
+
+    for (const sub of subCommands) {
+      if (re.test(sub)) {
+        return { allowed: true, reason };
+      }
+    }
+  }
+  return null;
+}
+
 export function checkForbiddenPatterns(
   command: string,
   patterns: ActivePattern[],
@@ -211,6 +259,23 @@ export async function main() {
   const command = input.tool_input.command;
 
   const cwd = input.cwd ?? process.cwd();
+
+  // Check allowed patterns first — if matched, bypass permission system.
+  const allowedPatterns = loadAllowedPatterns(cwd);
+  const allowResult = checkAllowedPatterns(command, allowedPatterns);
+  if (allowResult) {
+    const output: HookOutput = {
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "allow",
+        permissionDecisionReason: allowResult.reason,
+      },
+    };
+    console.log(JSON.stringify(output));
+    process.exit(0);
+  }
+
+  // Check forbidden patterns — deny if matched.
   const forbiddenPatterns = loadForbiddenPatterns(cwd);
   const checkers: Checker[] = [(cmd) => checkForbiddenPatterns(cmd, forbiddenPatterns)];
 
