@@ -143,7 +143,7 @@ This heuristic is intentionally broad, so it also blocks legitimate multi-line c
 ```bash
 git commit -m "feat: add feature
 
-#123 関連の修正"
+#123 fix related issue"
 ```
 
 **`pre-bash` is not vulnerable to this attack** because it matches against the **entire command string**, not line-by-line. The attack pattern above would never match `git commit *` since the full string includes `dangerous_command`. Meanwhile, a real multi-line git commit message matches correctly.
