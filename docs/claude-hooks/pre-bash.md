@@ -127,6 +127,37 @@ You can also set `"type": "glob"` or `"type": "regex"` to override auto-detectio
 }
 ```
 
+## Security: Why Allowed Patterns Are Safe
+
+Claude Code's built-in bash security heuristic blocks commands containing "a quoted newline followed by a `#`-prefixed line" (CVE-2025-66032). This prevents a **parser differential attack** where Claude Code's line-based permission checker and bash disagree on how to parse a command:
+
+```bash
+safe_command "arg
+#" dangerous_command
+```
+
+A line-based checker sees line 2 as a comment, but bash treats `"arg\n#"` as a single quoted argument — meaning `dangerous_command` silently passes the permission check.
+
+This heuristic is intentionally broad, so it also blocks legitimate multi-line commands like:
+
+```bash
+git commit -m "feat: add feature
+
+#123 関連の修正"
+```
+
+**`pre-bash` is not vulnerable to this attack** because it matches against the **entire command string**, not line-by-line. The attack pattern above would never match `git commit *` since the full string includes `dangerous_command`. Meanwhile, a real multi-line git commit message matches correctly.
+
+### Compound Command Safety
+
+For compound commands (`&&`, `||`, `;`, `|`), allowed patterns require **all** sub-commands to match. This prevents injection like:
+
+```bash
+rm -rf / && git commit -m "innocent"
+```
+
+Here `rm -rf /` does not match any allowed pattern, so the entire command is not auto-approved.
+
 ## Shell Operator Awareness
 
 Commands are split on shell operators (`&&`, `||`, `;`, `|`) and each sub-command is checked independently. This means a pattern like `safe-cmd malicious-cmd` will not match `safe-cmd && malicious-cmd`.
