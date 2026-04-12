@@ -161,9 +161,18 @@ describe("checkAllowedPatterns", () => {
     expect(result).toEqual({ allowed: true, reason: undefined });
   });
 
-  test("matches sub-commands in compound commands", () => {
-    const result = checkAllowedPatterns("echo hello && git commit -m msg", patterns);
+  test("requires ALL sub-commands to match for compound commands", () => {
+    // Only git commit matches, echo does not — should NOT allow
+    expect(checkAllowedPatterns("echo hello && git commit -m msg", patterns)).toBeNull();
+  });
+
+  test("allows compound commands when all sub-commands match", () => {
+    const result = checkAllowedPatterns("git commit -m msg && bun test src/foo.test.ts", patterns);
     expect(result).toEqual({ allowed: true, reason: "allow git commit" });
+  });
+
+  test("rejects compound commands with dangerous sub-commands", () => {
+    expect(checkAllowedPatterns("rm -rf / && git commit -m msg", patterns)).toBeNull();
   });
 
   test("supports regex patterns", () => {

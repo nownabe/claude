@@ -207,6 +207,12 @@ export function parsePattern(pattern: string, type?: "glob" | "regex"): RegExp {
   return globToRegExp(pattern);
 }
 
+/**
+ * Check whether ALL sub-commands in a compound command match at least one
+ * allowed pattern. Returns an allow result only when every sub-command is
+ * covered — a single unmatched sub-command means the whole command is not
+ * auto-approved, preventing attacks like `dangerous && git commit -m "msg"`.
+ */
 export function checkAllowedPatterns(
   command: string,
   patterns: ActiveAllowedPattern[],
@@ -214,17 +220,20 @@ export function checkAllowedPatterns(
   if (patterns.length === 0) return null;
 
   const subCommands = splitCommand(command);
+  const compiled = patterns.map((p) => ({
+    re: parsePattern(p.pattern, p.type),
+    reason: p.reason,
+  }));
 
-  for (const { pattern, reason, type } of patterns) {
-    const re = parsePattern(pattern, type);
+  let firstReason: string | undefined;
 
-    for (const sub of subCommands) {
-      if (re.test(sub)) {
-        return { allowed: true, reason };
-      }
-    }
+  for (const sub of subCommands) {
+    const match = compiled.find(({ re }) => re.test(sub));
+    if (!match) return null;
+    if (firstReason === undefined) firstReason = match.reason;
   }
-  return null;
+
+  return { allowed: true, reason: firstReason };
 }
 
 export function checkForbiddenPatterns(
