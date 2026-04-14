@@ -1,5 +1,11 @@
 # @nownabe/claude-hooks
 
+## 0.2.0
+
+### Minor Changes
+
+- e68377b: Add allowed patterns support to pre-bash hook for auto-approving specific bash commands
+
 ## 0.1.1
 
 ### Patch Changes
