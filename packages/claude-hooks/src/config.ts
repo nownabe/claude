@@ -5,12 +5,13 @@
 
 import { resolve, dirname, join } from "path";
 import { existsSync, readFileSync } from "fs";
-import type { ForbiddenPatternConfig } from "./pre-bash";
+import type { AllowedPatternConfig, ForbiddenPatternConfig } from "./pre-bash";
 
 // --- Types ---
 
 export interface Config {
   preBash?: {
+    allowedPatterns?: Record<string, AllowedPatternConfig>;
     forbiddenPatterns?: Record<string, ForbiddenPatternConfig>;
   };
   notification?: {

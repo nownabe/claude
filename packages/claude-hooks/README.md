@@ -24,7 +24,7 @@ File priority (highest first, per directory from CWD to HOME):
 
 ## Hooks
 
-| Hook                                                      | Description                               |
-| --------------------------------------------------------- | ----------------------------------------- |
-| [`pre-bash`](../../docs/claude-hooks/pre-bash.md)         | Block dangerous or unwanted Bash commands |
-| [`notification`](../../docs/claude-hooks/notification.md) | Send native OS notifications with sound   |
+| Hook                                                      | Description                                    |
+| --------------------------------------------------------- | ---------------------------------------------- |
+| [`pre-bash`](../../docs/claude-hooks/pre-bash.md)         | Auto-approve or block Bash commands by pattern |
+| [`notification`](../../docs/claude-hooks/notification.md) | Send native OS notifications with sound        |

@@ -1,6 +1,6 @@
-# `pre-bash` — Forbidden Command Patterns
+# `pre-bash` — Allowed & Forbidden Command Patterns
 
-A `PreToolUse` hook that blocks dangerous or unwanted Bash commands based on configurable patterns.
+A `PreToolUse` hook that auto-approves or blocks Bash commands based on configurable patterns.
 
 ## Setup
 
@@ -26,7 +26,38 @@ Add to your `settings.json` (`~/.claude/settings.json`, `.claude/settings.json`,
 
 ## Configuration
 
-Add a `preBash` section to your `.claude/nownabe-claude-hooks.json`. Patterns are specified as an object keyed by pattern string:
+Add a `preBash` section to your `.claude/nownabe-claude-hooks.json`. Patterns are specified as an object keyed by pattern string.
+
+### Allowed Patterns
+
+Allowed patterns auto-approve matching commands, bypassing Claude Code's permission system (including bash security heuristics like the multi-line command check). This is useful for commands that are known-safe but trigger false positives.
+
+```json
+{
+  "preBash": {
+    "allowedPatterns": {
+      "git commit *": {
+        "reason": "Allow git commit with multi-line messages",
+        "multiline": true
+      },
+      "bun test *": {},
+      "bun run *": {}
+    }
+  }
+}
+```
+
+Each entry supports:
+
+| Field       | Required | Description                                                               |
+| ----------- | -------- | ------------------------------------------------------------------------- |
+| `reason`    | No       | Displayed to the user when the command is allowed                         |
+| `type`      | No       | `"glob"` (default) or `"regex"`                                           |
+| `multiline` | No       | When `true`, `*` and `.` also match newline characters (default: `false`) |
+
+**Evaluation order:** Forbidden patterns are checked **before** allowed patterns. If a command matches a forbidden pattern, it is denied regardless of any allowed patterns. This ensures explicit deny rules always take precedence.
+
+### Forbidden Patterns
 
 ```json
 {
@@ -98,6 +129,52 @@ You can also set `"type": "glob"` or `"type": "regex"` to override auto-detectio
 }
 ```
 
+## Security: Why Allowed Patterns Are Safe
+
+Claude Code's built-in bash security heuristic blocks commands containing "a quoted newline followed by a `#`-prefixed line" (CVE-2025-66032). This prevents a **parser differential attack** where Claude Code's line-based permission checker and bash disagree on how to parse a command:
+
+```bash
+safe_command "arg
+#" dangerous_command
+```
+
+A line-based checker sees line 2 as a comment, but bash treats `"arg\n#"` as a single quoted argument — meaning `dangerous_command` silently passes the permission check.
+
+This heuristic is intentionally broad, so it also blocks legitimate multi-line commands like:
+
+```bash
+git commit -m "feat: add feature
+
+#123 fix related issue"
+```
+
+**`pre-bash` is not vulnerable to this attack** because it matches against the **entire command string**, not line-by-line. The attack pattern above would never match `git commit *` since the full string includes `dangerous_command`. Meanwhile, a real multi-line git commit message matches correctly when `"multiline": true` is set.
+
+To safely allow multi-line commands, enable `multiline` on specific patterns that need it:
+
+```json
+{
+  "preBash": {
+    "allowedPatterns": {
+      "git commit *": { "multiline": true },
+      "gh pr *": { "multiline": true }
+    }
+  }
+}
+```
+
+Without `"multiline": true`, patterns only match single-line commands. This is the safer default — only opt in to multi-line matching for patterns where you need it.
+
+### Compound Command Safety
+
+For compound commands (`&&`, `||`, `;`, `|`), allowed patterns require **all** sub-commands to match. This prevents injection like:
+
+```bash
+rm -rf / && git commit -m "innocent"
+```
+
+Here `rm -rf /` does not match any allowed pattern, so the entire command is not auto-approved.
+
 ## Shell Operator Awareness
 
 Commands are split on shell operators (`&&`, `||`, `;`, `|`) and each sub-command is checked independently. This means a pattern like `safe-cmd malicious-cmd` will not match `safe-cmd && malicious-cmd`.
@@ -108,7 +185,7 @@ When a command matches multiple forbidden patterns, all matching patterns are re
 
 ## Config Merging
 
-Because `forbiddenPatterns` is an object, patterns from parent and child directories are deep merged. Child directories can:
+Both `allowedPatterns` and `forbiddenPatterns` are objects, so patterns from parent and child directories are deep merged. Child directories can:
 
 - **Add** new patterns alongside inherited ones
 - **Override** an inherited pattern's reason/suggestion
@@ -117,6 +194,9 @@ Because `forbiddenPatterns` is an object, patterns from parent and child directo
 ```json
 {
   "preBash": {
+    "allowedPatterns": {
+      "git commit *": { "disabled": true }
+    },
     "forbiddenPatterns": {
       "git push --force *": { "disabled": true }
     }

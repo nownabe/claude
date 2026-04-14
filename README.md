@@ -47,10 +47,10 @@ See [packages/claude-tools/README.md](packages/claude-tools/README.md) for detai
 bunx @nownabe/claude-hooks <hook>
 ```
 
-| Hook           | Description                               |
-| -------------- | ----------------------------------------- |
-| `pre-bash`     | Block dangerous or unwanted Bash commands |
-| `notification` | Send native OS notifications with sound   |
+| Hook           | Description                                    |
+| -------------- | ---------------------------------------------- |
+| `pre-bash`     | Auto-approve or block Bash commands by pattern |
+| `notification` | Send native OS notifications with sound        |
 
 See [packages/claude-hooks/README.md](packages/claude-hooks/README.md) for details.
 
