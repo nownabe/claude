@@ -205,6 +205,59 @@ export function splitCommand(command: string): string[] {
 }
 
 /**
+ * Extract the command string from a `sh -c "..."` or `bash -c '...'` invocation.
+ * Returns null if the command is not a shell -c invocation.
+ */
+export function extractShellCArg(command: string): string | null {
+  const match = command.match(/^(?:sh|bash)\s+-c\s+/);
+  if (!match) return null;
+
+  const rest = command.slice(match[0].length);
+  if (rest.length === 0) return null;
+
+  const quoteChar = rest[0];
+  if (quoteChar !== '"' && quoteChar !== "'") {
+    // Unquoted argument — take until next whitespace
+    const end = rest.indexOf(" ");
+    return end === -1 ? rest : rest.slice(0, end);
+  }
+
+  // Find matching closing quote
+  let i = 1;
+  while (i < rest.length) {
+    if (rest[i] === "\\" && quoteChar === '"' && i + 1 < rest.length) {
+      i += 2;
+      continue;
+    }
+    if (rest[i] === quoteChar) {
+      return rest.slice(1, i);
+    }
+    i++;
+  }
+
+  // Unclosed quote — return content anyway
+  return rest.slice(1);
+}
+
+/**
+ * Expand sub-commands by recursively extracting inner commands from
+ * `sh -c` / `bash -c` invocations. The outer command is always included
+ * alongside the inner sub-commands so that both levels can be checked.
+ */
+export function expandSubCommands(subCommands: string[]): string[] {
+  const expanded: string[] = [];
+  for (const sub of subCommands) {
+    expanded.push(sub);
+    const innerArg = extractShellCArg(sub);
+    if (innerArg) {
+      const innerSubs = splitCommand(innerArg);
+      expanded.push(...expandSubCommands(innerSubs));
+    }
+  }
+  return expanded;
+}
+
+/**
  * Convert a Claude Code–style glob pattern to a RegExp.
  *
  * Rules (matching Claude Code's Bash permission syntax):
@@ -293,7 +346,7 @@ export function checkAllowedPatterns(
 ): { allowed: true; reason?: string } | null {
   if (patterns.length === 0) return null;
 
-  const subCommands = splitCommand(command);
+  const subCommands = expandSubCommands(splitCommand(command));
   const compiled = patterns.map((p) => ({
     re: parsePattern(p.pattern, p.type, p.multiline),
     reason: p.reason,
@@ -317,7 +370,7 @@ export function checkForbiddenPatterns(
   command: string,
   patterns: ActivePattern[],
 ): DenyResult[] | null {
-  const subCommands = splitCommand(command);
+  const subCommands = expandSubCommands(splitCommand(command));
   const results: DenyResult[] = [];
 
   for (const { pattern, reason, suggestion, type, multiline } of patterns) {
