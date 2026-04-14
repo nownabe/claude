@@ -179,7 +179,7 @@ export function globToRegExp(pattern: string): RegExp {
   }
 
   regex += "$";
-  return new RegExp(regex);
+  return new RegExp(regex, "s");
 }
 
 /**
