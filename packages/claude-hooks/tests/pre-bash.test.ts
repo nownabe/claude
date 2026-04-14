@@ -41,6 +41,37 @@ describe("splitCommand", () => {
   test("splits on mixed operators", () => {
     expect(splitCommand("a && b || c ; d | e")).toEqual(["a", "b", "c", "d", "e"]);
   });
+
+  test("does not split on && inside double quotes", () => {
+    expect(splitCommand('git commit -m "aaa && bbb"')).toEqual(['git commit -m "aaa && bbb"']);
+  });
+
+  test("does not split on || inside double quotes", () => {
+    expect(splitCommand('echo "foo || bar"')).toEqual(['echo "foo || bar"']);
+  });
+
+  test("does not split on ; inside single quotes", () => {
+    expect(splitCommand("echo 'cmd1 ; cmd2'")).toEqual(["echo 'cmd1 ; cmd2'"]);
+  });
+
+  test("does not split on | inside single quotes", () => {
+    expect(splitCommand("echo 'a | b'")).toEqual(["echo 'a | b'"]);
+  });
+
+  test("splits correctly with mix of quoted and unquoted operators", () => {
+    expect(splitCommand('git commit -m "a && b" && git push')).toEqual([
+      'git commit -m "a && b"',
+      "git push",
+    ]);
+  });
+
+  test("handles escaped quotes inside double quotes", () => {
+    expect(splitCommand('echo "say \\"hello\\"" && ls')).toEqual(['echo "say \\"hello\\""', "ls"]);
+  });
+
+  test("handles empty result from splitting", () => {
+    expect(splitCommand("")).toEqual([]);
+  });
 });
 
 describe("globToRegExp", () => {

@@ -144,10 +144,64 @@ export interface ActivePattern {
 
 /**
  * Split a command string on shell operators (`&&`, `||`, `;`, `|`),
- * trimming each sub-command.
+ * trimming each sub-command. Operators inside single or double quotes
+ * are not treated as separators.
  */
 export function splitCommand(command: string): string[] {
-  return command.split(/\s*(?:&&|\|\||[;|])\s*/).filter(Boolean);
+  const results: string[] = [];
+  let current = "";
+  let quote: "'" | '"' | null = null;
+  let i = 0;
+
+  while (i < command.length) {
+    const ch = command[i];
+
+    // Handle backslash escapes inside double quotes
+    if (ch === "\\" && quote === '"' && i + 1 < command.length) {
+      current += ch + command[i + 1];
+      i += 2;
+      continue;
+    }
+
+    // Toggle quote state
+    if ((ch === '"' || ch === "'") && (quote === null || quote === ch)) {
+      quote = quote === null ? ch : null;
+      current += ch;
+      i++;
+      continue;
+    }
+
+    // Only check for operators outside quotes
+    if (quote === null) {
+      // Check two-character operators first: &&, ||
+      const two = command.slice(i, i + 2);
+      if (two === "&&" || two === "||") {
+        const trimmed = current.trim();
+        if (trimmed) results.push(trimmed);
+        current = "";
+        i += 2;
+        // Skip surrounding whitespace
+        while (i < command.length && command[i] === " ") i++;
+        continue;
+      }
+      // Single-character operators: ;, |
+      if (ch === ";" || ch === "|") {
+        const trimmed = current.trim();
+        if (trimmed) results.push(trimmed);
+        current = "";
+        i++;
+        while (i < command.length && command[i] === " ") i++;
+        continue;
+      }
+    }
+
+    current += ch;
+    i++;
+  }
+
+  const trimmed = current.trim();
+  if (trimmed) results.push(trimmed);
+  return results;
 }
 
 /**
