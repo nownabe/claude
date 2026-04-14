@@ -74,13 +74,14 @@ interface HookOutput {
 // --- Feature: Allowed Command Patterns ---
 
 export type AllowedPatternConfig =
-  | { reason?: string; type?: "glob" | "regex"; disabled?: false }
+  | { reason?: string; type?: "glob" | "regex"; multiline?: boolean; disabled?: false }
   | { disabled: true };
 
 export interface ActiveAllowedPattern {
   pattern: string;
   reason?: string;
   type?: "glob" | "regex";
+  multiline?: boolean;
 }
 
 /**
@@ -95,14 +96,20 @@ export function loadAllowedPatterns(cwd: string): ActiveAllowedPattern[] {
     .filter(([, entry]) => !entry.disabled)
     .map(([pattern, entry]) => {
       const active = entry as Exclude<AllowedPatternConfig, { disabled: true }>;
-      return { pattern, reason: active.reason, type: active.type };
+      return { pattern, reason: active.reason, type: active.type, multiline: active.multiline };
     });
 }
 
 // --- Feature: Forbidden Command Patterns ---
 
 export type ForbiddenPatternConfig =
-  | { reason: string; suggestion: string; type?: "glob" | "regex"; disabled?: false }
+  | {
+      reason: string;
+      suggestion: string;
+      type?: "glob" | "regex";
+      multiline?: boolean;
+      disabled?: false;
+    }
   | { disabled: true };
 
 /**
@@ -117,7 +124,13 @@ export function loadForbiddenPatterns(cwd: string): ActivePattern[] {
     .filter(([, entry]) => !entry.disabled)
     .map(([pattern, entry]) => {
       const active = entry as Exclude<ForbiddenPatternConfig, { disabled: true }>;
-      return { pattern, reason: active.reason, suggestion: active.suggestion, type: active.type };
+      return {
+        pattern,
+        reason: active.reason,
+        suggestion: active.suggestion,
+        type: active.type,
+        multiline: active.multiline,
+      };
     });
 }
 
@@ -126,6 +139,7 @@ export interface ActivePattern {
   reason: string;
   suggestion: string;
   type?: "glob" | "regex";
+  multiline?: boolean;
 }
 
 /**
@@ -146,7 +160,7 @@ export function splitCommand(command: string): string[] {
  * - `cmd*` (no space) matches any string starting with `cmd`
  * - `:*` is treated as equivalent to ` *` (deprecated syntax)
  */
-export function globToRegExp(pattern: string): RegExp {
+export function globToRegExp(pattern: string, multiline?: boolean): RegExp {
   // Normalise deprecated `:*` suffix to ` *`
   const normalised = pattern.replace(/:(\*)/, " $1");
 
@@ -179,7 +193,7 @@ export function globToRegExp(pattern: string): RegExp {
   }
 
   regex += "$";
-  return new RegExp(regex, "s");
+  return new RegExp(regex, multiline ? "s" : undefined);
 }
 
 /**
@@ -193,18 +207,24 @@ export function globToRegExp(pattern: string): RegExp {
  * - `/pattern/` or `/pattern/flags` → treated as a regex
  * - Everything else → treated as a glob pattern
  */
-export function parsePattern(pattern: string, type?: "glob" | "regex"): RegExp {
+export function parsePattern(
+  pattern: string,
+  type?: "glob" | "regex",
+  multiline?: boolean,
+): RegExp {
   if (type === "regex") {
-    return new RegExp(pattern);
+    return new RegExp(pattern, multiline ? "s" : undefined);
   }
   if (type === "glob") {
-    return globToRegExp(pattern);
+    return globToRegExp(pattern, multiline);
   }
   const regexMatch = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
   if (regexMatch) {
-    return new RegExp(regexMatch[1], regexMatch[2]);
+    const flags = regexMatch[2];
+    const effectiveFlags = multiline && !flags.includes("s") ? flags + "s" : flags;
+    return new RegExp(regexMatch[1], effectiveFlags);
   }
-  return globToRegExp(pattern);
+  return globToRegExp(pattern, multiline);
 }
 
 /**
@@ -221,7 +241,7 @@ export function checkAllowedPatterns(
 
   const subCommands = splitCommand(command);
   const compiled = patterns.map((p) => ({
-    re: parsePattern(p.pattern, p.type),
+    re: parsePattern(p.pattern, p.type, p.multiline),
     reason: p.reason,
   }));
 
@@ -243,8 +263,8 @@ export function checkForbiddenPatterns(
   const subCommands = splitCommand(command);
   const results: DenyResult[] = [];
 
-  for (const { pattern, reason, suggestion, type } of patterns) {
-    const re = parsePattern(pattern, type);
+  for (const { pattern, reason, suggestion, type, multiline } of patterns) {
+    const re = parsePattern(pattern, type, multiline);
 
     for (const sub of subCommands) {
       if (re.test(sub)) {

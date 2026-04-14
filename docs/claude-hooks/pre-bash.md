@@ -37,7 +37,8 @@ Allowed patterns auto-approve matching commands, bypassing Claude Code's permiss
   "preBash": {
     "allowedPatterns": {
       "git commit *": {
-        "reason": "Allow git commit with any arguments"
+        "reason": "Allow git commit with multi-line messages",
+        "multiline": true
       },
       "bun test *": {},
       "bun run *": {}
@@ -48,10 +49,11 @@ Allowed patterns auto-approve matching commands, bypassing Claude Code's permiss
 
 Each entry supports:
 
-| Field    | Required | Description                                       |
-| -------- | -------- | ------------------------------------------------- |
-| `reason` | No       | Displayed to the user when the command is allowed |
-| `type`   | No       | `"glob"` (default) or `"regex"`                   |
+| Field       | Required | Description                                                               |
+| ----------- | -------- | ------------------------------------------------------------------------- |
+| `reason`    | No       | Displayed to the user when the command is allowed                         |
+| `type`      | No       | `"glob"` (default) or `"regex"`                                           |
+| `multiline` | No       | When `true`, `*` and `.` also match newline characters (default: `false`) |
 
 **Evaluation order:** Allowed patterns are checked **before** forbidden patterns. If a command matches an allowed pattern, it is immediately approved and forbidden patterns are not evaluated.
 
@@ -146,7 +148,22 @@ git commit -m "feat: add feature
 #123 fix related issue"
 ```
 
-**`pre-bash` is not vulnerable to this attack** because it matches against the **entire command string**, not line-by-line. The attack pattern above would never match `git commit *` since the full string includes `dangerous_command`. Meanwhile, a real multi-line git commit message matches correctly.
+**`pre-bash` is not vulnerable to this attack** because it matches against the **entire command string**, not line-by-line. The attack pattern above would never match `git commit *` since the full string includes `dangerous_command`. Meanwhile, a real multi-line git commit message matches correctly when `"multiline": true` is set.
+
+To safely allow multi-line commands, enable `multiline` on specific patterns that need it:
+
+```json
+{
+  "preBash": {
+    "allowedPatterns": {
+      "git commit *": { "multiline": true },
+      "gh pr *": { "multiline": true }
+    }
+  }
+}
+```
+
+Without `"multiline": true`, patterns only match single-line commands. This is the safer default — only opt in to multi-line matching for patterns where you need it.
 
 ### Compound Command Safety
 

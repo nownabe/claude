@@ -177,8 +177,8 @@ describe("checkAllowedPatterns", () => {
 
   describe("multi-line commands with #-prefixed lines (CVE-2025-66032)", () => {
     const ghPatterns: ActiveAllowedPattern[] = [
-      { pattern: "gh pr *", reason: "allow gh pr" },
-      { pattern: "git commit *", reason: "allow git commit" },
+      { pattern: "gh pr *", reason: "allow gh pr", multiline: true },
+      { pattern: "git commit *", reason: "allow git commit", multiline: true },
     ];
 
     test("allows gh pr create with quoted newlines and #-prefixed lines", () => {
@@ -193,6 +193,14 @@ describe("checkAllowedPatterns", () => {
       expect(result).toEqual({ allowed: true, reason: "allow git commit" });
     });
 
+    test("does not match multi-line commands without multiline flag", () => {
+      const singleLinePatterns: ActiveAllowedPattern[] = [
+        { pattern: "git commit *", reason: "allow git commit" },
+      ];
+      const command = 'git commit -m "feat: add feature\n\n#123 fix related issue"';
+      expect(checkAllowedPatterns(command, singleLinePatterns)).toBeNull();
+    });
+
     test("rejects parser differential attack: command hidden after #-prefixed line", () => {
       // Attack: dangerous_command is outside the quotes, hidden after a #-line
       const command = 'safe_command "arg\n#" dangerous_command';
@@ -200,11 +208,9 @@ describe("checkAllowedPatterns", () => {
     });
 
     test("rejects attack disguised as gh pr with trailing dangerous command", () => {
-      // The whole string does not split on &&, so it's one sub-command
-      // that does NOT match "gh pr *" because the glob anchors at start/end
-      const command = 'gh pr create --body "foo\n#" && rm -rf /';
       // splitCommand splits on &&, so we get ["gh pr create ...", "rm -rf /"]
       // "rm -rf /" does not match any allowed pattern → rejected
+      const command = 'gh pr create --body "foo\n#" && rm -rf /';
       expect(checkAllowedPatterns(command, ghPatterns)).toBeNull();
     });
 
