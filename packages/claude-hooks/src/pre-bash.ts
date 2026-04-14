@@ -248,7 +248,10 @@ export function checkAllowedPatterns(
   let firstReason: string | undefined;
 
   for (const sub of subCommands) {
-    const match = compiled.find(({ re }) => re.test(sub));
+    const match = compiled.find(({ re }) => {
+      re.lastIndex = 0;
+      return re.test(sub);
+    });
     if (!match) return null;
     if (firstReason === undefined) firstReason = match.reason;
   }
@@ -267,6 +270,7 @@ export function checkForbiddenPatterns(
     const re = parsePattern(pattern, type, multiline);
 
     for (const sub of subCommands) {
+      re.lastIndex = 0;
       if (re.test(sub)) {
         results.push({ reason, suggestion });
         break;
@@ -289,22 +293,7 @@ export async function main() {
 
   const cwd = input.cwd ?? process.cwd();
 
-  // Check allowed patterns first — if matched, bypass permission system.
-  const allowedPatterns = loadAllowedPatterns(cwd);
-  const allowResult = checkAllowedPatterns(command, allowedPatterns);
-  if (allowResult) {
-    const output: HookOutput = {
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "allow",
-        permissionDecisionReason: allowResult.reason,
-      },
-    };
-    console.log(JSON.stringify(output));
-    process.exit(0);
-  }
-
-  // Check forbidden patterns — deny if matched.
+  // Check forbidden patterns first — deny always takes precedence over allow.
   const forbiddenPatterns = loadForbiddenPatterns(cwd);
   const checkers: Checker[] = [(cmd) => checkForbiddenPatterns(cmd, forbiddenPatterns)];
 
@@ -324,6 +313,21 @@ export async function main() {
       console.log(JSON.stringify(output));
       process.exit(0);
     }
+  }
+
+  // Check allowed patterns — if matched, bypass permission system.
+  const allowedPatterns = loadAllowedPatterns(cwd);
+  const allowResult = checkAllowedPatterns(command, allowedPatterns);
+  if (allowResult) {
+    const output: HookOutput = {
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "allow",
+        permissionDecisionReason: allowResult.reason,
+      },
+    };
+    console.log(JSON.stringify(output));
+    process.exit(0);
   }
 
   // All checks passed — no opinion, let normal permission flow continue.

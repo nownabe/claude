@@ -235,6 +235,16 @@ describe("checkAllowedPatterns", () => {
     const result = checkAllowedPatterns('git commit -m "msg"', regexPatterns);
     expect(result).toEqual({ allowed: true, reason: "allow git commit" });
   });
+
+  test("handles stateful regex (global flag) across sub-commands", () => {
+    const patterns: ActiveAllowedPattern[] = [
+      { pattern: "/git commit/g", reason: "allow git commit" },
+    ];
+    // With a global regex, lastIndex advances after first match.
+    // Without resetting, the second sub-command would fail.
+    const result = checkAllowedPatterns("git commit -m a && git commit -m b", patterns);
+    expect(result).toEqual({ allowed: true, reason: "allow git commit" });
+  });
 });
 
 describe("checkForbiddenPatterns", () => {

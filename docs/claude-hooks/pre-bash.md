@@ -55,7 +55,7 @@ Each entry supports:
 | `type`      | No       | `"glob"` (default) or `"regex"`                                           |
 | `multiline` | No       | When `true`, `*` and `.` also match newline characters (default: `false`) |
 
-**Evaluation order:** Allowed patterns are checked **before** forbidden patterns. If a command matches an allowed pattern, it is immediately approved and forbidden patterns are not evaluated.
+**Evaluation order:** Forbidden patterns are checked **before** allowed patterns. If a command matches a forbidden pattern, it is denied regardless of any allowed patterns. This ensures explicit deny rules always take precedence.
 
 ### Forbidden Patterns
 
