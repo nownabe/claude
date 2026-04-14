@@ -144,10 +144,117 @@ export interface ActivePattern {
 
 /**
  * Split a command string on shell operators (`&&`, `||`, `;`, `|`),
- * trimming each sub-command.
+ * trimming each sub-command. Operators inside single or double quotes
+ * are not treated as separators.
  */
 export function splitCommand(command: string): string[] {
-  return command.split(/\s*(?:&&|\|\||[;|])\s*/).filter(Boolean);
+  const results: string[] = [];
+  let current = "";
+  let quote: "'" | '"' | null = null;
+  let i = 0;
+
+  while (i < command.length) {
+    const ch = command[i];
+
+    // Handle backslash escapes inside double quotes
+    if (ch === "\\" && quote === '"' && i + 1 < command.length) {
+      current += ch + command[i + 1];
+      i += 2;
+      continue;
+    }
+
+    // Toggle quote state
+    if ((ch === '"' || ch === "'") && (quote === null || quote === ch)) {
+      quote = quote === null ? ch : null;
+      current += ch;
+      i++;
+      continue;
+    }
+
+    // Only check for operators outside quotes
+    if (quote === null) {
+      // Check two-character operators first: &&, ||
+      const two = command.slice(i, i + 2);
+      if (two === "&&" || two === "||") {
+        const trimmed = current.trim();
+        if (trimmed) results.push(trimmed);
+        current = "";
+        i += 2;
+        // Skip surrounding whitespace
+        while (i < command.length && command[i] === " ") i++;
+        continue;
+      }
+      // Single-character operators: ;, |
+      if (ch === ";" || ch === "|") {
+        const trimmed = current.trim();
+        if (trimmed) results.push(trimmed);
+        current = "";
+        i++;
+        while (i < command.length && command[i] === " ") i++;
+        continue;
+      }
+    }
+
+    current += ch;
+    i++;
+  }
+
+  const trimmed = current.trim();
+  if (trimmed) results.push(trimmed);
+  return results;
+}
+
+/**
+ * Extract the command string from a `sh -c "..."` or `bash -c '...'` invocation.
+ * Returns null if the command is not a shell -c invocation.
+ */
+export function extractShellCArg(command: string): string | null {
+  const match = command.match(/^(?:sh|bash)\s+-c\s+/);
+  if (!match) return null;
+
+  const rest = command.slice(match[0].length);
+  if (rest.length === 0) return null;
+
+  const quoteChar = rest[0];
+  if (quoteChar !== '"' && quoteChar !== "'") {
+    // Unquoted argument — take until next whitespace
+    const end = rest.indexOf(" ");
+    return end === -1 ? rest : rest.slice(0, end);
+  }
+
+  // Find matching closing quote
+  let i = 1;
+  while (i < rest.length) {
+    if (rest[i] === "\\" && quoteChar === '"' && i + 1 < rest.length) {
+      i += 2;
+      continue;
+    }
+    if (rest[i] === quoteChar) {
+      return rest.slice(1, i);
+    }
+    i++;
+  }
+
+  // Unclosed quote — return content anyway
+  return rest.slice(1);
+}
+
+/**
+ * Expand sub-commands by recursively extracting inner commands from
+ * `sh -c` / `bash -c` invocations. The outer command is always included
+ * alongside the inner sub-commands so that both levels can be checked.
+ */
+export function expandSubCommands(subCommands: string[]): string[] {
+  const expanded: string[] = [];
+  for (const sub of subCommands) {
+    expanded.push(sub);
+    const innerArg = extractShellCArg(sub);
+    if (innerArg) {
+      const innerSubs = splitCommand(innerArg);
+      expanded.push(...expandSubCommands(innerSubs));
+    }
+  }
+  return expanded;
 }
 
 /**
@@ -239,7 +346,7 @@ export function checkAllowedPatterns(
 ): { allowed: true; reason?: string } | null {
   if (patterns.length === 0) return null;
 
-  const subCommands = splitCommand(command);
+  const subCommands = expandSubCommands(splitCommand(command));
   const compiled = patterns.map((p) => ({
     re: parsePattern(p.pattern, p.type, p.multiline),
     reason: p.reason,
@@ -263,7 +370,7 @@ export function checkForbiddenPatterns(
   command: string,
   patterns: ActivePattern[],
 ): DenyResult[] | null {
-  const subCommands = splitCommand(command);
+  const subCommands = expandSubCommands(splitCommand(command));
   const results: DenyResult[] = [];
 
   for (const { pattern, reason, suggestion, type, multiline } of patterns) {

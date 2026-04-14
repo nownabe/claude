@@ -9,6 +9,8 @@ import {
   checkAllowedPatterns,
   globToRegExp,
   splitCommand,
+  extractShellCArg,
+  expandSubCommands,
   parsePattern,
   type ActivePattern,
   type ActiveAllowedPattern,
@@ -40,6 +42,102 @@ describe("splitCommand", () => {
 
   test("splits on mixed operators", () => {
     expect(splitCommand("a && b || c ; d | e")).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  test("does not split on && inside double quotes", () => {
+    expect(splitCommand('git commit -m "aaa && bbb"')).toEqual(['git commit -m "aaa && bbb"']);
+  });
+
+  test("does not split on || inside double quotes", () => {
+    expect(splitCommand('echo "foo || bar"')).toEqual(['echo "foo || bar"']);
+  });
+
+  test("does not split on ; inside single quotes", () => {
+    expect(splitCommand("echo 'cmd1 ; cmd2'")).toEqual(["echo 'cmd1 ; cmd2'"]);
+  });
+
+  test("does not split on | inside single quotes", () => {
+    expect(splitCommand("echo 'a | b'")).toEqual(["echo 'a | b'"]);
+  });
+
+  test("splits correctly with mix of quoted and unquoted operators", () => {
+    expect(splitCommand('git commit -m "a && b" && git push')).toEqual([
+      'git commit -m "a && b"',
+      "git push",
+    ]);
+  });
+
+  test("handles escaped quotes inside double quotes", () => {
+    expect(splitCommand('echo "say \\"hello\\"" && ls')).toEqual(['echo "say \\"hello\\""', "ls"]);
+  });
+
+  test("handles empty result from splitting", () => {
+    expect(splitCommand("")).toEqual([]);
+  });
+});
+
+describe("extractShellCArg", () => {
+  test("extracts double-quoted arg from sh -c", () => {
+    expect(extractShellCArg('sh -c "echo hello && rm -rf /tmp"')).toBe("echo hello && rm -rf /tmp");
+  });
+
+  test("extracts single-quoted arg from bash -c", () => {
+    expect(extractShellCArg("bash -c 'echo hello && rm -rf /tmp'")).toBe(
+      "echo hello && rm -rf /tmp",
+    );
+  });
+
+  test("extracts unquoted arg from sh -c", () => {
+    expect(extractShellCArg("sh -c ls")).toBe("ls");
+  });
+
+  test("extracts unquoted arg up to first space", () => {
+    expect(extractShellCArg("sh -c echo hello")).toBe("echo");
+  });
+
+  test("returns null for non-shell commands", () => {
+    expect(extractShellCArg("git commit -m msg")).toBeNull();
+  });
+
+  test("returns null for sh without -c", () => {
+    expect(extractShellCArg("sh script.sh")).toBeNull();
+  });
+
+  test("handles escaped quotes inside double-quoted arg", () => {
+    expect(extractShellCArg('sh -c "echo \\"hello\\""')).toBe('echo \\"hello\\"');
+  });
+
+  test("handles empty -c arg", () => {
+    expect(extractShellCArg("sh -c ")).toBeNull();
+  });
+
+  test("extracts arg with trailing positional arguments", () => {
+    expect(extractShellCArg('bash -c "echo $0" arg0')).toBe("echo $0");
+  });
+});
+
+describe("expandSubCommands", () => {
+  test("returns commands as-is when no sh -c", () => {
+    expect(expandSubCommands(["git status", "ls"])).toEqual(["git status", "ls"]);
+  });
+
+  test("expands sh -c with inner commands", () => {
+    const result = expandSubCommands(['sh -c "echo ok && rm -rf /tmp"']);
+    expect(result).toEqual(['sh -c "echo ok && rm -rf /tmp"', "echo ok", "rm -rf /tmp"]);
+  });
+
+  test("expands bash -c alongside other commands", () => {
+    const result = expandSubCommands(["git status", 'bash -c "ls && pwd"']);
+    expect(result).toEqual(["git status", 'bash -c "ls && pwd"', "ls", "pwd"]);
+  });
+
+  test("recursively expands nested sh -c", () => {
+    const result = expandSubCommands(["sh -c 'bash -c \"echo inner\"'"]);
+    expect(result).toEqual([
+      "sh -c 'bash -c \"echo inner\"'",
+      'bash -c "echo inner"',
+      "echo inner",
+    ]);
   });
 });
 
@@ -236,6 +334,24 @@ describe("checkAllowedPatterns", () => {
     expect(result).toEqual({ allowed: true, reason: "allow git commit" });
   });
 
+  describe("nested shell execution (sh -c / bash -c)", () => {
+    test("rejects sh -c with dangerous inner command", () => {
+      const patterns: ActiveAllowedPattern[] = [{ pattern: "sh -c *", reason: "allow sh" }];
+      // sh -c wrapping a dangerous command — inner rm -rf is not in allowed patterns
+      expect(checkAllowedPatterns('sh -c "echo ok && rm -rf /tmp"', patterns)).toBeNull();
+    });
+
+    test("allows sh -c when all inner commands are also allowed", () => {
+      const patterns: ActiveAllowedPattern[] = [
+        { pattern: "sh -c *", reason: "allow sh" },
+        { pattern: "echo *", reason: "allow echo" },
+        { pattern: "ls", reason: "allow ls" },
+      ];
+      const result = checkAllowedPatterns('sh -c "echo hello && ls"', patterns);
+      expect(result).toEqual({ allowed: true, reason: "allow sh" });
+    });
+  });
+
   test("handles stateful regex (global flag) across sub-commands", () => {
     const patterns: ActiveAllowedPattern[] = [
       { pattern: "/git commit/g", reason: "allow git commit" },
@@ -299,6 +415,20 @@ describe("checkForbiddenPatterns", () => {
 
     test("returns null for empty patterns", () => {
       expect(checkForbiddenPatterns("git -C /tmp", [])).toBeNull();
+    });
+
+    test("detects forbidden command inside sh -c", () => {
+      const result = checkForbiddenPatterns('sh -c "echo ok && rm -rf /tmp"', patterns);
+      expect(result?.[0].reason).toBe("rm -rf / is forbidden");
+    });
+
+    test("detects forbidden command inside bash -c", () => {
+      const result = checkForbiddenPatterns("bash -c 'git -C /tmp status'", patterns);
+      expect(result?.[0].reason).toBe("git -C is forbidden");
+    });
+
+    test("does not flag safe sh -c command", () => {
+      expect(checkForbiddenPatterns('sh -c "echo hello && ls"', patterns)).toBeNull();
     });
   });
 
