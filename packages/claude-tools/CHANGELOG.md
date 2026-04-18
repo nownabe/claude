@@ -1,5 +1,11 @@
 # @nownabe/claude-tools
 
+## 0.6.0
+
+### Minor Changes
+
+- 6589c5c: Add `gh get-pr-comments` command to retrieve pull request review comments
+
 ## 0.5.0
 
 ### Minor Changes
