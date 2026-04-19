@@ -20,6 +20,7 @@ bunx @nownabe/claude-tools <command>
 | [`gh get-actions-run`](../../docs/claude-tools/gh/get-actions-run.md)   | Get GitHub Actions workflow run information      |
 | [`gh get-job-logs`](../../docs/claude-tools/gh/get-job-logs.md)         | Get logs from a GitHub Actions job               |
 | [`gh get-pr-comments`](../../docs/claude-tools/gh/get-pr-comments.md)   | Get review comments on a pull request            |
+| [`gh get-pr-reviews`](../../docs/claude-tools/gh/get-pr-reviews.md)     | Get reviews on a pull request                    |
 | [`gh get-release`](../../docs/claude-tools/gh/get-release.md)           | Get release information from a GitHub repository |
 | [`gh get-repo-content`](../../docs/claude-tools/gh/get-repo-content.md) | Get file content from a GitHub repository        |
 | [`gh list-run-jobs`](../../docs/claude-tools/gh/list-run-jobs.md)       | List jobs from a GitHub Actions workflow run     |
