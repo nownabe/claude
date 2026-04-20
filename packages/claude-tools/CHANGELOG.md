@@ -1,5 +1,11 @@
 # @nownabe/claude-tools
 
+## 0.7.0
+
+### Minor Changes
+
+- a3b21f1: Add `gh get-pr-reviews` command to get pull request reviews
+
 ## 0.6.0
 
 ### Minor Changes
